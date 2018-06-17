@@ -10,14 +10,25 @@ class Monopoly:
     def roll_dice(self):
         pass
 
-    def run_game(self):
+    def add_player(self, name):
+        self.players.append(Player(name))
+
+    def go_to_jail(self):
         pass
-        # self.player_positions = {}
-        # self.player_liquid_holdings = {}
-        # self.player_property_holdings = {}
-        # self.community_chest_deck = []
-        # self.chance_deck = []
-        # self.board_position_states = {}
+
+    #Checks value of net value of assets for each player, if sum(player.debts) >= player.liquid_holdings (ie the net worth of the player is zero), then they are removed from the list of players
+    def eject_bankrupt_players(self):
+        pass
+
+    #Moves liquid assets of ejected players
+    def redistribute_assets(self, player_index):
+        pass
+
+    #Reads the list of players, starting from the list of all possible actions the player can take, as a function of the other player's positions and assets, the action list is paired down to just those the player can legally perform.
+    
+    def generate_tree(self):
+        pass
+
 
 class Card:
 
@@ -42,16 +53,31 @@ class Deck:
 
 class Player:
 
-    def __init__(self, name, position, liquid_holdings, property_holdings):
+    def __init__(self, name):
         self.name = name
-        self.position = position
-        self.liquid_holdings = liquid_holdings
-        self.property_holdings = property_holdings
+        self.position = 0
+        self.liquid_holdings = 1500
+        self.property_holdings = None
+        #keys can either be player names, or the bank
+        self.debts = {}
+        self.consecutive_turns = 0
+
 
 class Board:
 
     def make_board(self):
+        #key is position number, value is
         self.pieces = {1: []}
+
+
+        # def run_game(self):
+        #     pass
+        # self.player_positions = {}
+        # self.player_liquid_holdings = {}
+        # self.player_property_holdings = {}
+        # self.community_chest_deck = []
+        # self.chance_deck = []
+        # self.board_position_states = {}
 
 
 
