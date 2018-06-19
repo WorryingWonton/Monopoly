@@ -13,9 +13,6 @@ class Monopoly:
     def add_player(self, name):
         self.players.append(Player(name))
 
-    def go_to_jail(self):
-        pass
-
     #Checks value of net value of assets for each player, if sum(player.debts) >= player.liquid_holdings (ie the net worth of the player is zero), then they are removed from the list of players
     def eject_bankrupt_players(self):
         pass
@@ -31,7 +28,6 @@ class Monopoly:
 
 
 class Card:
-
     def __init__(self, face, action):
         self.face = face
         self.action = action
@@ -51,6 +47,12 @@ class Deck:
     def deal_from_deck(self):
         pass
 
+class Property:
+    def __init__(self, name, price, type):
+        self.name = name
+        self.price = price
+        self.type = type
+
 class Player:
 
     def __init__(self, name):
@@ -61,23 +63,29 @@ class Player:
         #keys can either be player names, or the bank
         self.debts = {}
         self.consecutive_turns = 0
+        self.jailed = False
 
 
 class Board:
 
     def make_board(self):
-        #key is position number, value is
+        #key is position number, value is a list containing the space name, and the action to take at said space
         self.pieces = {1: []}
 
 
-        # def run_game(self):
-        #     pass
-        # self.player_positions = {}
-        # self.player_liquid_holdings = {}
-        # self.player_property_holdings = {}
-        # self.community_chest_deck = []
-        # self.chance_deck = []
-        # self.board_position_states = {}
+
+
+def pay_income_tax(player):
+    player.liquid_holdings *= .9
+
+
+player_1 = Player('Leslie')
+card = Card('Pay Income Tax', pay_income_tax)
+card.action(player_1)
+print(player_1.liquid_holdings)
+
+
+
 
 
 
