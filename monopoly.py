@@ -15,17 +15,14 @@ class Monopoly:
 
     #Checks value of net value of assets for each player, if sum(player.debts) >= player.liquid_holdings (ie the net worth of the player is zero), then they are removed from the list of players
     def eject_bankrupt_players(self):
-        pass
+        for player in self.players:
+            if player.liquid_holdings - sum(player.debts.values()) <= 0:
+                self.players.remove(player)
 
+# list(reversed(sorted(buy_sell_list.items(), key=lambda x: abs(x[1]))))
     #Moves liquid assets of ejected players
     def redistribute_assets(self, player_index):
         pass
-
-    #Reads the list of players, starting from the list of all possible actions the player can take, as a function of the other player's positions and assets, the action list is paired down to just those the player can legally perform.
-    
-    def generate_tree(self):
-        pass
-
 
 class Card:
     def __init__(self, face, action):
@@ -48,11 +45,11 @@ class Deck:
         pass
 
 class Property:
-    def __init__(self, name, price, type):
+    def __init__(self, name, price, type, available=True):
         self.name = name
         self.price = price
         self.type = type
-
+        self.available = available
 class Player:
 
     def __init__(self, name):
@@ -70,19 +67,14 @@ class Board:
 
     def make_board(self):
         #key is position number, value is a list containing the space name, and the action to take at said space
-        self.pieces = {1: []}
-
-
+        self.spaces = {1: []}
 
 
 def pay_income_tax(player):
     player.liquid_holdings *= .9
 
 
-player_1 = Player('Leslie')
-card = Card('Pay Income Tax', pay_income_tax)
-card.action(player_1)
-print(player_1.liquid_holdings)
+
 
 
 

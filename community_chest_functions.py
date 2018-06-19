@@ -59,8 +59,3 @@ def you_have_won_second_prize_in_a_beauty_contest(player):
 def you_inherit_100(player):
     player.liquid_holdings += 100
 
-#Chance Deck Functions
-def advance_to_go(player):
-    #What position is 'Go'?
-    player.position = 0
-    player.liquid_holdings += 200
