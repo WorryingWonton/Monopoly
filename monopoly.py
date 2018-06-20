@@ -6,6 +6,9 @@ class Monopoly:
         self.players = []
         self.chance_deck = Deck(sub_type='Chance').make_deck()
         self.community_deck = Deck(sub_type='Community').make_deck()
+        #key = Property object, value = Player object
+        self.property_owners = {}
+        self.board = Board
 
     def roll_dice(self):
         pass
@@ -19,7 +22,12 @@ class Monopoly:
             if player.liquid_holdings - sum(player.debts.values()) <= 0:
                 self.players.remove(player)
 
-# list(reversed(sorted(buy_sell_list.items(), key=lambda x: abs(x[1]))))
+    def determine_tile_state(self, tile):
+        pass
+
+    def find_property_owner_of_tile(self, tile):
+        pass
+
     #Moves liquid assets of ejected players
     def redistribute_assets(self, player_index):
         pass
@@ -45,11 +53,11 @@ class Deck:
         pass
 
 class Property:
-    def __init__(self, name, price, type, available=True):
+    def __init__(self, name, price, type):
         self.name = name
         self.price = price
         self.type = type
-        self.available = available
+
 class Player:
 
     def __init__(self, name):
@@ -62,16 +70,26 @@ class Player:
         self.consecutive_turns = 0
         self.jailed = False
 
-
 class Board:
+    def __init__(self):
+        self.board = {}
+        self.make_board()
+
 
     def make_board(self):
         #key is position number, value is a list containing the space name, and the action to take at said space
-        self.spaces = {1: []}
+        self.spaces = []
+
+class Tile:
+    def __init__(self, position, color, action, property):
+        self.position = position
+        self.color = color
+        self.action = action
+        self.property = property
+        self.structures = []
 
 
-def pay_income_tax(player):
-    player.liquid_holdings *= .9
+
 
 
 
