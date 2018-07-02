@@ -100,38 +100,73 @@ class Player:
 #A board object is a list of Tile objects,
 class Board:
     def __init__(self):
-        self.board = []
+        self.board = [RailRoadTile(5, None, Property(name='Reading Railroad', price=200, type='railroad'))]
 
 class Tile:
-    def __init__(self, position, color, action, property):
+    def __init__(self, position, color, property):
         self.position = position
         self.color = color
-        self.action = action
         self.property = property
         self.structures = []
 
-    def find_owner(self):
-        pass
+    #Find owner of the tile in question, if no owner, return None
+    def find_owner(self, players):
+        for player in players:
+            for property in player.property_holdings:
+                if property.position == self.position:
+                    return player
+        return None
 
+    #TODO come up with base case for if_owned
     def if_owned(self, player, owner):
         pass
 
+    #I think the base case for is_not_owned is to treat it like Free Parking, or do nothing.
     def if_not_owned(self, player):
         pass
+
+    #Below method finds out how many similar properties an owner has
+    def count_similar_owned_properties(self, owner):
+        num_tiles = 0
+        for tile in owner.property_holdings:
+            if tile.property.type == self.property.type:
+                num_tiles += 1
+        return num_tiles
 
 
 class RailRoadTile(Tile):
+
     def if_owned(self, player, owner):
-        num_owned_railroads = self.find_num_owned_railroads(owner)
+        num_owned_railroads = self.count_similar_owned_properties(owner)
         player.liquid_holdings -= 25 * 2**(num_owned_railroads - 1)
         owner.liquid_holdings += 25 * 2**(num_owned_railroads - 1)
 
-    def find_num_owned_railroads(owner):
-        for tile in participant.property_holdings:
-            if tile.position == player.position:
-                tile_owner = participant
-
     def if_not_owned(self, player):
-        pass
+        if player.liquid_holdings >= self.property.price:
+            buy_decision = input(f'{self.property.name} is unoccupied, you can buy it for ${self.property.price}, do you want to?')
+            if buy_decision.lower() in ['true', 'yes', 'y', 't', '1']:
+                #This seems fucky and wrong.
+                player.property_holdings += self
+                player.liquid_holdings -= self.property.price
+
+
+class UtilityTile(Tile):
+    def if_owned(self, player, owner):
+
+
+class TaxTile(Tile):
+    pass
+
+class JailTile(Tile):
+    pass
+
+class GoTile(Tile):
+    pass
+
+class ColorTile(Tile):
+    pass
+
+class CardTile(Tile):
+    pass
 
 
