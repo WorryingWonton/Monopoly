@@ -53,6 +53,12 @@ def advance_token_to_nearset_railroad(player, player_list):
                 player.liquid_holdings -= 200
             else:
                 return f'You do not have enough funds {player.name}, you need $200, you have {player.liquid_holdings}'
+        if purchase_decision in ['false', 'n', 'no']:
+            return
+
+def bank_pays_you_50_dividend(player):
+    player.liquid_holdings += 50
+
 
 
 
