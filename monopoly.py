@@ -101,11 +101,6 @@ class Player:
 class Board:
     def __init__(self):
         self.board = []
-        self.make_board()
-
-    def make_board(self):
-        #key is position number, value is a list containing the space name, and the action to take at said space
-        self.spaces = []
 
 class Tile:
     def __init__(self, position, color, action, property):
@@ -115,6 +110,28 @@ class Tile:
         self.property = property
         self.structures = []
 
+    def find_owner(self):
+        pass
 
+    def if_owned(self, player, owner):
+        pass
+
+    def if_not_owned(self, player):
+        pass
+
+
+class RailRoadTile(Tile):
+    def if_owned(self, player, owner):
+        num_owned_railroads = self.find_num_owned_railroads(owner)
+        player.liquid_holdings -= 25 * 2**(num_owned_railroads - 1)
+        owner.liquid_holdings += 25 * 2**(num_owned_railroads - 1)
+
+    def find_num_owned_railroads(owner):
+        for tile in participant.property_holdings:
+            if tile.position == player.position:
+                tile_owner = participant
+
+    def if_not_owned(self, player):
+        pass
 
 
