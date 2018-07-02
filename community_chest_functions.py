@@ -53,6 +53,7 @@ def you_are_assessed_for_street_repairs(player):
         #I'm not sure if there are other kinds of properties
         if property.lower() == 'house':
             player.liquid_holdings -= 40
+
 def you_have_won_second_prize_in_a_beauty_contest(player):
     player.liquid_holdings += 10
 
