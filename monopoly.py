@@ -12,8 +12,11 @@ class Monopoly:
         self.board = Board
         self.turns = 0
 
-    def roll_dice(self):
-        return random.randint(1, 6) + random.randint(1, 6)
+    def roll_dice(self, jailed):
+        if jailed:
+            return (random.randint(1, 6), random.randint(1, 6))
+        else:
+            return random.randint(1, 6) + random.randint(1, 6)
 
     def add_player(self, name):
         self.players.append(Player(name))
@@ -51,7 +54,7 @@ class Monopoly:
 
     def advance_turn(self):
         active_player = self.players[self.turns % len(self.players)]
-        active_player.position += self.roll_dice()
+        active_player.position += self.roll_dice(False)
 
     #Recursive
     def build_decision_tree(self, active_player):
@@ -82,7 +85,7 @@ class Property:
     def __init__(self, name, price, type):
         self.name = name
         self.price = price
-        #Can be utility, property, or rail road
+        #Can be utility, property, rail road, jail, go_deck, or chance_deck
         self.type = type
 
 class Player:
@@ -95,6 +98,7 @@ class Player:
         #keys can either be player names, or the bank
         self.debts = {}
         self.consecutive_turns = 0
+        #Might axe this attribute after finishing the Tile subclasses, I don't think anything in the game is dependent upon knowing if the player is jailed or not jailed, aside from the dice roll method
         self.jailed = False
 
 #A board object is a list of Tile objects,
@@ -118,7 +122,7 @@ class Tile:
         return None
 
     #TODO come up with base case for if_owned
-    def if_owned(self, player, owner):
+    def if_owned(self, player, owner, dice_roll):
         pass
 
     #I think the base case for is_not_owned is to treat it like Free Parking, or do nothing.
@@ -136,7 +140,7 @@ class Tile:
 
 class RailRoadTile(Tile):
 
-    def if_owned(self, player, owner):
+    def if_owned(self, player, owner, dice_roll=None):
         num_owned_railroads = self.count_similar_owned_properties(owner)
         player.liquid_holdings -= 25 * 2**(num_owned_railroads - 1)
         owner.liquid_holdings += 25 * 2**(num_owned_railroads - 1)
@@ -145,28 +149,70 @@ class RailRoadTile(Tile):
         if player.liquid_holdings >= self.property.price:
             buy_decision = input(f'{self.property.name} is unoccupied, you can buy it for ${self.property.price}, do you want to?')
             if buy_decision.lower() in ['true', 'yes', 'y', 't', '1']:
-                #This seems fucky and wrong.
-                player.property_holdings += self
+                player.property_holdings.append(self)
                 player.liquid_holdings -= self.property.price
 
 
+#This gets a bit weird...  So I need to know the size of the dice roll that caused the player to land on this tile
 class UtilityTile(Tile):
-    def if_owned(self, player, owner):
+
+    def if_owned(self, player, owner, dice_roll):
+        num_owned_utilites = self.count_similar_owned_properties(owner)
+        if num_owned_utilites == 1:
+            owner.liquid_holdings += dice_roll * 4
+            player.liquid_holdings -= dice_roll * 4
+        if num_owned_utilites == 2:
+            owner.liquid_holdings += dice_roll * 10
+            player.liquid_holdings -= dice_roll * 10
+
+    def if_not_owned(self, player):
+        if player.liquid_holdings >= self.property.price:
+            buy_decision = input(f'{self.property.name} is available, you can buy it for ${self.property.price}, do you want to?')
+            if buy_decision.lower() in ['true', 'yes', 'y', 't', '1']:
+                player.property_holdings.append(self)
+                player.liquid_holdings -= self.property.price
 
 
+#Tax, Jail, Card, and Go Tiles cannot be purchased
 class TaxTile(Tile):
     pass
 
 class JailTile(Tile):
-    pass
+
+    def jailed_dice_roll(self, player):
+        if player.consecutive_turns == 3:
+            dice_roll = Monopoly().roll_dice(True)
+            if dice_roll[1] == dice_roll[2]:
+                player.position += dice_roll[1] + dice_roll[2]
+            else:
+                player.position += dice_roll[1] + dice_roll[2]
+                player.consecutive_turns = 0
+                player.liquid_holdings -= 50
+                player.jailed = False
+        if player.consecutive_turns < 3:
+            dice_roll = Monopoly().roll_dice(True)
+            if dice_roll[1] == dice_roll[2]:
+                player.position += dice_roll[1] + dice_roll[2]
+            else:
+                player.consecutive_turns += 1
+
+    def pay_fine(self, player):
+        player.liquid_holdings -= 50
+        player.position += Monopoly().roll_dice(False)
+        player.jailed = False
 
 class GoTile(Tile):
-    pass
+
+    def give_funds(self, player):
+        player.liquid_holdings += 200
 
 class ColorTile(Tile):
-    pass
+
+    def build_structues(self, player):
+        pass
 
 class CardTile(Tile):
-    pass
 
+    def draw_card(self, player):
+        pass
 
