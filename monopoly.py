@@ -22,39 +22,10 @@ class Monopoly:
         for player in self.players:
             if player.find_gross_worth() - sum(player.debts) <= 0:
                 self.players.remove(player)
-                
-    def determine_tile_state(self, tile):
-        pass
-
-    def find_property_owner_of_tile(self, tile):
-        pass
-
-    #finds the price of the property given a Tile object
-        #If the property is owned, the owner will be given a prompt to enter their selling price
-            #If the price is too high, the active player can type 'rn' to renegotiate
-                #rn can be used a maximum of three times before the turn ends
-    def find_property_price(self, tile, rn):
-        pass
-
-    #Moves liquid assets of ejected players
-    def redistribute_assets(self, player_index):
-        pass
-
-    def determine_buildable_structures(self, player):
-        #This is where Monopoly gets complicated.  If a player owns all four tiles of a particular color group, then they can (for a fee) build houses on their tiles.
-        #They can build one house per turn
-        #The player can build a maximum of four houses per tile, at which point they can place a hotel on the tile
-        #The player cannot unevenly increase the number of houses on a particular tile:
-        #The difference between the number of houses on each tile cannot exceed one.  So something like (0, 0, 1), (0, 0, 0), (1, 2, 1) are all fine, but (0, 2, 0) or (1, 4, 1) are not okay.
-        pass
 
     def advance_turn(self):
         active_player = self.players[self.turns % len(self.players)]
         active_player.position += sum(HelperFunctions.roll_dice())
-
-    #Recursive
-    def build_decision_tree(self, active_player):
-        pass
 
 class Card:
 
@@ -77,44 +48,13 @@ class Deck:
     def deal_from_deck(self):
         pass
 
-class Property:
-
-    def __init__(self, name, price, mortgage_price, type, possible_structures):
-        self.name = name
-        self.price = price
-        self.mortgage_price = mortgage_price
-        #Can be utility, property, rail road, jail, go_deck, or chance_deck
-        self.type = type
-        # Can be 'house', 'hotel', or 'train station'
-        self.possible_structures = possible_structures
-        self.existing_structures = []
-
-    def add_structure(self, structure):
-        if structure in self.possible_structures:
-            self.existing_structures += structure
-        else:
-            raise Exception('REEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE')
-
-class MediterraneanAvenue(Property):
-
-    Property.name = 'Mediterranean Avenue'
-    Property.price = 60
-    Property.type = 'color'
-    Property.possible_structures = [('house', 50), ('hotel', 50)]
-    Property.existing_structures = []
-
-class ParkPlace(Property):
-    pass
-
-
-
 class Player:
 
     def __init__(self, name):
         self.name = name
         self.position = 0
         self.liquid_holdings = 1500
-        #Contains a list of Tile objects the player currently owns properties on, each Tile object contains a list of Structures the player has built upon it, for determining rent/resale value
+        #Contains a list of Tile objects the player currently owns properties on
         self.property_holdings = None
         #keys can either be player names, or the bank
         self.debts = {}
@@ -129,12 +69,14 @@ class Player:
             for structure in property.structures:
                 gross_worth += structure[1]
 
+    def build_decision_list(self, active_player):
+        pass
 
 #A board object is a list of Tile objects,
 class Board:
 
     def __init__(self):
-        self.board = [RailRoadTile(5, None, Property(name='Reading Railroad', price=200, type='railroad'))]
+        self.board = [RailRoadTile(5, None, Property(name='Reading Railroad', price=200, mortgage_price=100 ,type='railroad', possible_structures=('train station', 100)))]
 
 class Tile:
 
@@ -168,6 +110,29 @@ class Tile:
                 num_tiles += 1
         return num_tiles
 
+class Property:
+
+    def __init__(self, name, price, mortgage_price, type, possible_structures):
+        self.name = name
+        self.price = price
+        self.mortgage_price = mortgage_price
+        #Can be utility, property, rail road, jail, go_deck, or chance_deck
+        self.type = type
+        #List of structure objects that can be built on the property
+        self.possible_structures = possible_structures
+        self.existing_structures = []
+
+    def add_structure(self, structure):
+        if structure in self.possible_structures:
+            self.existing_structures += structure
+        else:
+            raise Exception('REEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE')
+
+
+class Structure():
+    def __init__(self, type, price):
+        self.type = type
+        self.price = price
 
 class RailRoadTile(Tile):
 
@@ -208,7 +173,7 @@ class UtilityTile(Tile):
 class IncomeTaxTile(Tile):
 
     def deduct_taxes(self, player):
-        gross_worth = HelperFunctions.find_gross_worth(player)
+        gross_worth = player.find_gross_worth()
         if gross_worth < 200:
             player.liquid_holdings -= .1 * gross_worth
         if gross_worth >= 200:
@@ -269,6 +234,45 @@ class HelperFunctions:
     @staticmethod
     def roll_dice():
         return (random.randint(1, 6), random.randint(1, 6))
+
+    #Returns a list containing property colors where a given player can build on
+    #Should not be called on rail road or utility tiles
+    @staticmethod
+    def determine_buildable_tiles(player):
+        #Number of each colored tile
+        color_group_dict = {'brown': 2, 'cyan': 3, 'pink': 3, 'orange': 3, 'red': 3, 'yellow': 3, 'green': 3, 'blue': 2}
+        buildable_list = []
+        for color in color_group_dict:
+            count = 0
+            for tile in player.property_holdings:
+                if tile.color == color:
+                    count += 1
+            if color_group_dict[color] == count:
+                buildable_list.append(color)
+        return buildable_list
+
+    #The method which enforces the build even rule for colored tiles, might move this to the board class, currently this method is unfinished
+    @staticmethod
+    def determine_buildable_structures(player, buildable_list):
+        #List of tuples in the form (tile, structure_type)
+        structure_list = []
+        for color in buildable_list:
+            tile_list = []
+            for tile in player.property_holdings:
+                if tile.color == color:
+                    tile_list.append(tile)
+            building_list = []
+            for tile in tile_list:
+                building_list.append((tile, len(tile.property.existing_structures)))
+
+    @staticmethod
+    def afforadable(object, player):
+        if player.liquid_holdings >= object.price:
+            return True
+
+
+
+
 
 
 
