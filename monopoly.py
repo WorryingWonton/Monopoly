@@ -1,4 +1,6 @@
 import random
+from distutils.util import strtobool
+
 class Monopoly:
 
     def __init__(self):
@@ -12,21 +14,15 @@ class Monopoly:
         self.board = Board
         self.turns = 0
 
-    def roll_dice(self, jailed):
-        if jailed:
-            return (random.randint(1, 6), random.randint(1, 6))
-        else:
-            return random.randint(1, 6) + random.randint(1, 6)
-
     def add_player(self, name):
         self.players.append(Player(name))
 
     #Checks value of net value of assets for each player, if sum(player.debts) >= player.liquid_holdings (ie the net worth of the player is zero), then they are removed from the list of players
     def eject_bankrupt_players(self):
         for player in self.players:
-            if player.liquid_holdings - sum(player.debts.values()) <= 0:
+            if player.find_gross_worth() - sum(player.debts) <= 0:
                 self.players.remove(player)
-
+                
     def determine_tile_state(self, tile):
         pass
 
@@ -54,7 +50,7 @@ class Monopoly:
 
     def advance_turn(self):
         active_player = self.players[self.turns % len(self.players)]
-        active_player.position += self.roll_dice(False)
+        active_player.position += sum(HelperFunctions.roll_dice())
 
     #Recursive
     def build_decision_tree(self, active_player):
@@ -82,13 +78,38 @@ class Deck:
         pass
 
 class Property:
-    def __init__(self, name, price, type):
+
+    def __init__(self, name, price, mortgage_price, type, possible_structures):
         self.name = name
         self.price = price
+        self.mortgage_price = mortgage_price
         #Can be utility, property, rail road, jail, go_deck, or chance_deck
         self.type = type
+        # Can be 'house', 'hotel', or 'train station'
+        self.possible_structures = possible_structures
+        self.existing_structures = []
+
+    def add_structure(self, structure):
+        if structure in self.possible_structures:
+            self.existing_structures += structure
+        else:
+            raise Exception('REEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE')
+
+class MediterraneanAvenue(Property):
+
+    Property.name = 'Mediterranean Avenue'
+    Property.price = 60
+    Property.type = 'color'
+    Property.possible_structures = [('house', 50), ('hotel', 50)]
+    Property.existing_structures = []
+
+class ParkPlace(Property):
+    pass
+
+
 
 class Player:
+
     def __init__(self, name):
         self.name = name
         self.position = 0
@@ -101,17 +122,27 @@ class Player:
         #Might axe this attribute after finishing the Tile subclasses, I don't think anything in the game is dependent upon knowing if the player is jailed or not jailed, aside from the dice roll method
         self.jailed = False
 
+    def find_gross_worth(self):
+        gross_worth = self.liquid_holdings
+        for property in self.property_holdings:
+            gross_worth += property.price
+            for structure in property.structures:
+                gross_worth += structure[1]
+
+
 #A board object is a list of Tile objects,
 class Board:
+
     def __init__(self):
         self.board = [RailRoadTile(5, None, Property(name='Reading Railroad', price=200, type='railroad'))]
 
 class Tile:
+
     def __init__(self, position, color, property):
         self.position = position
         self.color = color
         self.property = property
-        self.structures = []
+
 
     #Find owner of the tile in question, if no owner, return None
     def find_owner(self, players):
@@ -147,8 +178,8 @@ class RailRoadTile(Tile):
 
     def if_not_owned(self, player):
         if player.liquid_holdings >= self.property.price:
-            buy_decision = input(f'{self.property.name} is unoccupied, you can buy it for ${self.property.price}, do you want to?')
-            if buy_decision.lower() in ['true', 'yes', 'y', 't', '1']:
+            buy_decision = strtobool(input(f'{self.property.name} is unoccupied, you can buy it for ${self.property.price}, do you want to?').lower())
+            if buy_decision:
                 player.property_holdings.append(self)
                 player.liquid_holdings -= self.property.price
 
@@ -167,21 +198,32 @@ class UtilityTile(Tile):
 
     def if_not_owned(self, player):
         if player.liquid_holdings >= self.property.price:
-            buy_decision = input(f'{self.property.name} is available, you can buy it for ${self.property.price}, do you want to?')
-            if buy_decision.lower() in ['true', 'yes', 'y', 't', '1']:
+            buy_decision = strtobool(input(f'{self.property.name} is available, you can buy it for ${self.property.price}, do you want to?').lower())
+            if buy_decision:
                 player.property_holdings.append(self)
                 player.liquid_holdings -= self.property.price
 
 
 #Tax, Jail, Card, and Go Tiles cannot be purchased
-class TaxTile(Tile):
-    pass
+class IncomeTaxTile(Tile):
+
+    def deduct_taxes(self, player):
+        gross_worth = HelperFunctions.find_gross_worth(player)
+        if gross_worth < 200:
+            player.liquid_holdings -= .1 * gross_worth
+        if gross_worth >= 200:
+            tax_decision =input(f'Your net worth is {gross_worth}, which is >= 200, would you like to pay $200, or ten percent of your net worth, which totals ${0.1 * gross_worth}\n Enter 200 to pay $200, or 10 to pay 10%')
+            if tax_decision == '200':
+                player.liquid_holdings -= 200
+            else:
+                player.liquid_holdings *= .9
+
 
 class JailTile(Tile):
 
     def jailed_dice_roll(self, player):
         if player.consecutive_turns == 3:
-            dice_roll = Monopoly().roll_dice(True)
+            dice_roll = HelperFunctions.roll_dice()
             if dice_roll[1] == dice_roll[2]:
                 player.position += dice_roll[1] + dice_roll[2]
             else:
@@ -190,7 +232,7 @@ class JailTile(Tile):
                 player.liquid_holdings -= 50
                 player.jailed = False
         if player.consecutive_turns < 3:
-            dice_roll = Monopoly().roll_dice(True)
+            dice_roll = HelperFunctions.roll_dice()
             if dice_roll[1] == dice_roll[2]:
                 player.position += dice_roll[1] + dice_roll[2]
             else:
@@ -198,7 +240,7 @@ class JailTile(Tile):
 
     def pay_fine(self, player):
         player.liquid_holdings -= 50
-        player.position += Monopoly().roll_dice(False)
+        player.position += sum(HelperFunctions.roll_dice())
         player.jailed = False
 
 class GoTile(Tile):
@@ -208,6 +250,12 @@ class GoTile(Tile):
 
 class ColorTile(Tile):
 
+    def if_owned(self, player, owner, dice_roll=None):
+        pass
+
+    def if_not_owned(self, player):
+        pass
+
     def build_structues(self, player):
         pass
 
@@ -216,3 +264,16 @@ class CardTile(Tile):
     def draw_card(self, player):
         pass
 
+class HelperFunctions:
+    
+    @staticmethod
+    def roll_dice():
+        return (random.randint(1, 6), random.randint(1, 6))
+
+
+
+
+
+    
+
+        

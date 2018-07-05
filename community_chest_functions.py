@@ -1,5 +1,5 @@
 #I'm going to put all of the card action functions here.
-from monopoly import Monopoly
+from monopoly import HelperFunctions
 #Community Chest Functions
 def advance_to_go(player):
     #What position is 'Go'?
@@ -12,7 +12,7 @@ def go_to_jail(player):
 
 def get_out_jail_free(player):
     player.jailed = False
-    player.position += Monopoly().roll_dice
+    player.position += HelperFunctions.roll_dice()
 
 def bank_error_in_your_favor(player):
     player.liquid_holdings += 200
