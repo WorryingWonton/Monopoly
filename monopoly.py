@@ -25,7 +25,8 @@ class Monopoly:
 
     def advance_turn(self):
         active_player = self.players[self.turns % len(self.players)]
-        active_player.position += sum(HelperFunctions.roll_dice())
+        self.turns += 1
+        return active_player
 
 class Card:
 
@@ -62,15 +63,36 @@ class Player:
         #Might axe this attribute after finishing the Tile subclasses, I don't think anything in the game is dependent upon knowing if the player is jailed or not jailed, aside from the dice roll method
         self.jailed = False
 
+        def build_decision_list(self, active_player):
+            pass
+
+
     def find_gross_worth(self):
         gross_worth = self.liquid_holdings
         for property in self.property_holdings:
-            gross_worth += property.price
+            if property.mortgaged:
+                gross_worth += property.mortgage_price
+            else:
+                gross_worth += property.price
             for structure in property.structures:
                 gross_worth += structure[1]
 
-    def build_decision_list(self, active_player):
-        pass
+    #Returns a list containing property colors where a given player can build on
+    #Should not be called on rail road or utility tiles
+    @staticmethod
+    def determine_buildable_tiles(player):
+        #Number of each colored tile
+        color_group_dict = {'brown': 2, 'cyan': 3, 'pink': 3, 'orange': 3, 'red': 3, 'yellow': 3, 'green': 3, 'blue': 2}
+        buildable_list = []
+        for color in color_group_dict:
+            count = 0
+            for tile in player.property_holdings:
+                if tile.color == color:
+                    count += 1
+            if color_group_dict[color] == count:
+                buildable_list.append(color)
+        return buildable_list
+
 
 #A board object is a list of Tile objects,
 class Board:
@@ -121,6 +143,7 @@ class Property:
         #List of structure objects that can be built on the property
         self.possible_structures = possible_structures
         self.existing_structures = []
+        self.mortgaged = False
 
     def add_structure(self, structure):
         if structure in self.possible_structures:
@@ -234,36 +257,6 @@ class HelperFunctions:
     @staticmethod
     def roll_dice():
         return (random.randint(1, 6), random.randint(1, 6))
-
-    #Returns a list containing property colors where a given player can build on
-    #Should not be called on rail road or utility tiles
-    @staticmethod
-    def determine_buildable_tiles(player):
-        #Number of each colored tile
-        color_group_dict = {'brown': 2, 'cyan': 3, 'pink': 3, 'orange': 3, 'red': 3, 'yellow': 3, 'green': 3, 'blue': 2}
-        buildable_list = []
-        for color in color_group_dict:
-            count = 0
-            for tile in player.property_holdings:
-                if tile.color == color:
-                    count += 1
-            if color_group_dict[color] == count:
-                buildable_list.append(color)
-        return buildable_list
-
-    #The method which enforces the build even rule for colored tiles, might move this to the board class, currently this method is unfinished
-    @staticmethod
-    def determine_buildable_structures(player, buildable_list):
-        #List of tuples in the form (tile, structure_type)
-        structure_list = []
-        for color in buildable_list:
-            tile_list = []
-            for tile in player.property_holdings:
-                if tile.color == color:
-                    tile_list.append(tile)
-            building_list = []
-            for tile in tile_list:
-                building_list.append((tile, len(tile.property.existing_structures)))
 
     @staticmethod
     def afforadable(object, player):
