@@ -27,7 +27,6 @@ class Monopoly:
         active_player = self.players[self.turns % len(self.players)]
         self.turns += 1
         return active_player
-
 class Card:
 
     def __init__(self, face, action):
