@@ -135,7 +135,6 @@ class Tile:
                     return player
         return None
 
-    #TODO come up with base case for if_owned
     def if_owned(self, player, owner, dice_roll):
         pass
 
@@ -260,10 +259,10 @@ class ColorTile(Tile):
                 return self.property.existing_structures[-1].rent
             #Monopoly case
             else:
-                return self.property.rent * 2
+                return self.property.base_rent * 2
         #Base case
         else:
-            return self.property.rent
+            return self.property.base_rent
 
     def build_structues(self, player):
         target_structure = self.property.possible_structures[len(self.property.existing_structures)]
@@ -273,8 +272,6 @@ class ColorTile(Tile):
             self.property.existing_structures.append(target_structure)
         else:
             return f'Insufficent funds.  Your liquid holdings total {player.liquid_holdings}, the structure\'s price is {cost}'
-
-
 
 class CardTile(Tile):
 
@@ -338,9 +335,6 @@ class HelperFunctions:
         if player.liquid_holdings >= object.price:
             return True
 
-
-#TODO: Finish Color Tile subclass
-#TODO: Refactor existing Tile subclasses to zero out rent payments to the owner if the Tile is mortgaged.
 
 
 
