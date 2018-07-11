@@ -108,7 +108,14 @@ class Player:
 class Board:
 
     def __init__(self):
-        self.board = [CardTile(2, None, None, 'chance'), RailRoadTile(5, None, Property(name='Reading Railroad', price=200, mortgage_price=100 , possible_structures=('train station', 100)), tile_type = 'railroad')]
+        self.board = [GoTile(0, None, None, 'go'),
+                      CardTile(2, None, None, 'chance'),
+                      IncomeTaxTile(4, None, None, 'income_tax'),
+                      RailRoadTile(5, None, Property(name='Reading Railroad', price=200, mortgage_price=100 , possible_structures=Structure('train station', 100, 50), base_rent=25), tile_type = 'railroad'),
+                      CardTile(7, None, None, 'community'),
+                      JailTile(10, None, None, 'jail'),
+                      GoToJailTile(30, None, None, 'gotojail'),
+                      LuxuryTaxTile(38, None, None, 'luxury_tax')]
 
 class Tile:
 
@@ -116,7 +123,7 @@ class Tile:
         self.position = position
         self.color = color
         self.property = property
-        #can be color, chance, community, jail, gotojail, utility, tax, railroad
+        #can be color, chance, community, jail, gotojail, utility, income_tax, luxury_tax, railroad, go
         self.tile_type = tile_type
 
 
@@ -132,9 +139,18 @@ class Tile:
     def if_owned(self, player, owner, dice_roll):
         pass
 
-    #I think the base case for is_not_owned is to treat it like Free Parking, or do nothing.
     def if_not_owned(self, player):
-        pass
+        if player.liquid_holdings >= self.property.price:
+            buy_decision = strtobool(input(f'{self.property.name} is available.  \nYou can buy it for {self.property.price} or mortage it for {self.property.mortgage_price}\n Enter \'Buy\' \'Mortgage\' or \'Pass\'').lower())
+            if buy_decision == 'buy':
+                player.property_holdings.append(self)
+                player.liquid_holdings -= self.property.price
+            elif buy_decision == 'mortgage':
+                player.liquid_holdings -= self.property.mortgage_price
+                self.property.mortgaged = True
+                player.property_holdings.append(self)
+            else:
+                pass
 
     #Below method finds out how many similar properties an owner has
     def count_similar_owned_properties(self, owner):
@@ -148,15 +164,18 @@ class RailRoadTile(Tile):
 
     def if_owned(self, player, owner, dice_roll=None):
         num_owned_railroads = self.count_similar_owned_properties(owner)
-        player.liquid_holdings -= 25 * 2**(num_owned_railroads - 1)
-        owner.liquid_holdings += 25 * 2**(num_owned_railroads - 1)
+        #If the current tile has a trainstation on it
+        if self.property.existing_structures[0].type == 'train station':
+            player.liquid_holdings -= self.property.base_rent * 4**(num_owned_railroads - 1)
+            owner.liquid_holdings += self.property.base_rent * 4**(num_owned_railroads - 1)
+        else:
+            player.liquid_holdings -= self.property.base_rent * 2**(num_owned_railroads - 1)
+            owner.liquid_holdings += self.property.base_rent * 2**(num_owned_railroads - 1)
 
-    def if_not_owned(self, player):
-        if player.liquid_holdings >= self.property.price:
-            buy_decision = strtobool(input(f'{self.property.name} is unoccupied, you can buy it for ${self.property.price}, do you want to?').lower())
-            if buy_decision:
-                player.property_holdings.append(self)
-                player.liquid_holdings -= self.property.price
+    def build_train_station(self, player):
+        if player.liquid_holdings >= self.property.possible_structures.price:
+            player.liquid_holdings -= self.property.possible_structures.price
+            self.property.existing_structures.append(self.property.possible_structures)
 
 
 #This gets a bit weird...  So I need to know the size of the dice roll that caused the player to land on this tile
@@ -165,24 +184,24 @@ class UtilityTile(Tile):
     def if_owned(self, player, owner, dice_roll):
         num_owned_utilites = self.count_similar_owned_properties(owner)
         if num_owned_utilites == 1:
-            owner.liquid_holdings += sum(dice_roll) * 4
-            player.liquid_holdings -= sum(dice_roll) * 4
+            if self.property.mortgaged:
+                player.liquid_holdings -= sum(dice_roll) * 4
+            else:
+                owner.liquid_holdings += sum(dice_roll) * 4
+                player.liquid_holdings -= sum(dice_roll) * 4
         if num_owned_utilites == 2:
-            owner.liquid_holdings += sum(dice_roll) * 10
-            player.liquid_holdings -= sum(dice_roll) * 10
-
-    def if_not_owned(self, player):
-        if player.liquid_holdings >= self.property.price:
-            buy_decision = strtobool(input(f'{self.property.name} is available, you can buy it for ${self.property.price}, do you want to?').lower())
-            if buy_decision:
-                player.property_holdings.append(self)
-                player.liquid_holdings -= self.property.price
+            if self.property.mortgaged:
+                player.liquid_holdings -= sum(dice_roll) * 10
+            else:
+                owner.liquid_holdings += sum(dice_roll) * 10
+                player.liquid_holdings -= sum(dice_roll) * 10
 
 
 #Tax, Jail, Card, and Go Tiles cannot be purchased
-class TaxTile(Tile):
+class IncomeTaxTile(Tile):
 
-    def deduct_taxes(self, player):
+    @staticmethod
+    def deduct_taxes(player):
         gross_worth = player.find_gross_worth()
         if gross_worth < 200:
             player.liquid_holdings -= .1 * gross_worth
@@ -196,7 +215,8 @@ class TaxTile(Tile):
 
 class JailTile(Tile):
 
-    def jailed_dice_roll(self, player):
+    @staticmethod
+    def jailed_dice_roll(player):
         if player.consecutive_turns == 3:
             dice_roll = HelperFunctions.roll_dice()
             if dice_roll[1] == dice_roll[2]:
@@ -213,54 +233,83 @@ class JailTile(Tile):
             else:
                 player.consecutive_turns += 1
 
-    def pay_fine(self, player):
+    @staticmethod
+    def pay_fine(player):
         player.liquid_holdings -= 50
         player.position += sum(HelperFunctions.roll_dice())
         player.jailed = False
 
 class GoTile(Tile):
 
-    def give_funds(self, player):
+    @staticmethod
+    def give_funds(player):
         player.liquid_holdings += 200
 
 class ColorTile(Tile):
-
+    #Determine how many tiles the owner of this tile has, determine the number of structures on this tile, determine if mortgaged, deduct rent
     def if_owned(self, player, owner, dice_roll=None):
-        pass
+        rent = self.assess_rent(owner)
+        player.liquid_holdings -= rent
+        if not self.property.mortgaged:
+            owner.liquid_holdings += rent
 
-    def if_not_owned(self, player):
-        pass
+    def assess_rent(self, owner):
+        if self.color in owner.determine_buildable_tiles():
+            #Structures case
+            if len(self.property.existing_structures) > 0:
+                return self.property.existing_structures[-1].rent
+            #Monopoly case
+            else:
+                return self.property.rent * 2
+        #Base case
+        else:
+            return self.property.rent
 
     def build_structues(self, player):
-        pass
+        target_structure = self.property.possible_structures[len(self.property.existing_structures)]
+        cost = target_structure.price
+        if cost <= player.liquid_holdings:
+            player.liquid_holdings -= cost
+            self.property.existing_structures.append(target_structure)
+        else:
+            return f'Insufficent funds.  Your liquid holdings total {player.liquid_holdings}, the structure\'s price is {cost}'
+
+
 
 class CardTile(Tile):
 
-    def draw_card(self, player, deck):
+    @staticmethod
+    def draw_card(player, deck):
         card = deck[-1]
         card.action(player)
 
-def GoToJail(Tile):
+class GoToJailTile(Tile):
+
+    @staticmethod
     def go_to_jail(player):
-        pass
+        player.jailed = True
+        player.position = 10
 
+class LuxuryTaxTile(Tile):
 
+    @staticmethod
+    def pay_luxury_tax(player):
+        player.liquid_holdings -= 75
 
-
-def FreeParking(Tile):
+#This Tile does nothing, however it is the only Tile which truly does nothing, therefore it gets its own class
+class FreeParking(Tile):
     pass
 
 
 class Property:
 
-    def __init__(self, name, price, mortgage_price, possible_structures):
+    def __init__(self, name, price, mortgage_price, possible_structures, base_rent):
         self.name = name
         self.price = price
         self.mortgage_price = mortgage_price
-        #Can be utility, property, rail road, jail, go_deck, or chance_deck
-        # self.type = type
         #List of structure objects that can be built on the property
         self.possible_structures = possible_structures
+        self.base_rent = base_rent
         self.existing_structures = []
         self.mortgaged = False
 
@@ -272,9 +321,10 @@ class Property:
 
 
 class Structure():
-    def __init__(self, type, price):
+    def __init__(self, type, price, rent):
         self.type = type
         self.price = price
+        self.rent = rent
 
 
 class HelperFunctions:
@@ -288,6 +338,9 @@ class HelperFunctions:
         if player.liquid_holdings >= object.price:
             return True
 
+
+#TODO: Finish Color Tile subclass
+#TODO: Refactor existing Tile subclasses to zero out rent payments to the owner if the Tile is mortgaged.
 
 
 
