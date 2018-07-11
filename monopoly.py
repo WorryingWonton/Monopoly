@@ -74,8 +74,6 @@ class Player:
         #Might axe this attribute after finishing the Tile subclasses, I don't think anything in the game is dependent upon knowing if the player is jailed or not jailed, aside from the dice roll method
         self.jailed = False
         self.hand = []
-        def build_decision_list(self, active_player):
-            pass
 
 
     def find_gross_worth(self):
@@ -110,16 +108,16 @@ class Player:
 class Board:
 
     def __init__(self):
-        self.board = [CardTile(2, None, None, 'chance'), RailRoadTile(5, None, Property(name='Reading Railroad', price=200, mortgage_price=100 ,type='railroad', possible_structures=('train station', 100)))]
+        self.board = [CardTile(2, None, None, 'chance'), RailRoadTile(5, None, Property(name='Reading Railroad', price=200, mortgage_price=100 , possible_structures=('train station', 100)), tile_type = 'railroad')]
 
 class Tile:
 
-    def __init__(self, position, color, property, type):
+    def __init__(self, position, color, property, tile_type):
         self.position = position
         self.color = color
         self.property = property
-        #can be color, chance, community, jail, gotojail,
-        self.type = type
+        #can be color, chance, community, jail, gotojail, utility, tax, railroad
+        self.tile_type = tile_type
 
 
     #Find owner of the tile in question, if no owner, return None
@@ -142,11 +140,9 @@ class Tile:
     def count_similar_owned_properties(self, owner):
         num_tiles = 0
         for tile in owner.property_holdings:
-            if tile.property.type == self.property.type:
+            if tile.tile_type == self.tile_type:
                 num_tiles += 1
         return num_tiles
-
-
 
 class RailRoadTile(Tile):
 
@@ -245,7 +241,11 @@ class CardTile(Tile):
         card.action(player)
 
 def GoToJail(Tile):
-    pass
+    def go_to_jail(player):
+        pass
+
+
+
 
 def FreeParking(Tile):
     pass
@@ -253,12 +253,12 @@ def FreeParking(Tile):
 
 class Property:
 
-    def __init__(self, name, price, mortgage_price, type, possible_structures):
+    def __init__(self, name, price, mortgage_price, possible_structures):
         self.name = name
         self.price = price
         self.mortgage_price = mortgage_price
         #Can be utility, property, rail road, jail, go_deck, or chance_deck
-        self.type = type
+        # self.type = type
         #List of structure objects that can be built on the property
         self.possible_structures = possible_structures
         self.existing_structures = []
