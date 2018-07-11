@@ -1,5 +1,8 @@
 import random
 from distutils.util import strtobool
+#This feels like I might be creating a circular dependency between these modules and monopoly, since these import from monopoly and monopoly imports from them
+from community_chest_functions import *
+from chance_deck_functions import *
 
 class Monopoly:
 
@@ -27,24 +30,33 @@ class Monopoly:
         active_player = self.players[self.turns % len(self.players)]
         self.turns += 1
         return active_player
+
+
 class Card:
 
-    def __init__(self, face, action):
+    def __init__(self, face, action, holdable):
         self.face = face
         self.action = action
+        self.holdable = holdable
 
 class Deck:
 
     #sub_type can either be community or chance
     def __init__(self, sub_type):
         self.sub_type = sub_type
+        self.cards = []
 
     def make_deck(self):
-        pass
+        if self.sub_type.lower() == 'chance':
+            self.cards = []
+        elif self.sub_type.lower() == 'community':
+            self.cards = []
+        else:
+            raise Exception(f'Unhandled subtype {self.sub_type}, acceptable subtypes are Chance and Community')
 
     def shuffle_deck(self):
         pass
-
+    #Cards are read from the bottom of each deck
     def deal_from_deck(self):
         pass
 
@@ -61,7 +73,7 @@ class Player:
         self.consecutive_turns = 0
         #Might axe this attribute after finishing the Tile subclasses, I don't think anything in the game is dependent upon knowing if the player is jailed or not jailed, aside from the dice roll method
         self.jailed = False
-
+        self.hand = []
         def build_decision_list(self, active_player):
             pass
 
@@ -89,6 +101,7 @@ class Player:
                 if tile.color == color:
                     count += 1
             if color_group_dict[color] == count:
+
                 buildable_list.append(color)
         return buildable_list
 
@@ -97,14 +110,16 @@ class Player:
 class Board:
 
     def __init__(self):
-        self.board = [RailRoadTile(5, None, Property(name='Reading Railroad', price=200, mortgage_price=100 ,type='railroad', possible_structures=('train station', 100)))]
+        self.board = [CardTile(2, None, None, 'chance'), RailRoadTile(5, None, Property(name='Reading Railroad', price=200, mortgage_price=100 ,type='railroad', possible_structures=('train station', 100)))]
 
 class Tile:
 
-    def __init__(self, position, color, property):
+    def __init__(self, position, color, property, type):
         self.position = position
         self.color = color
         self.property = property
+        #can be color, chance, community, jail, gotojail,
+        self.type = type
 
 
     #Find owner of the tile in question, if no owner, return None
@@ -131,30 +146,7 @@ class Tile:
                 num_tiles += 1
         return num_tiles
 
-class Property:
 
-    def __init__(self, name, price, mortgage_price, type, possible_structures):
-        self.name = name
-        self.price = price
-        self.mortgage_price = mortgage_price
-        #Can be utility, property, rail road, jail, go_deck, or chance_deck
-        self.type = type
-        #List of structure objects that can be built on the property
-        self.possible_structures = possible_structures
-        self.existing_structures = []
-        self.mortgaged = False
-
-    def add_structure(self, structure):
-        if structure in self.possible_structures:
-            self.existing_structures += structure
-        else:
-            raise Exception('REEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE')
-
-
-class Structure():
-    def __init__(self, type, price):
-        self.type = type
-        self.price = price
 
 class RailRoadTile(Tile):
 
@@ -177,11 +169,11 @@ class UtilityTile(Tile):
     def if_owned(self, player, owner, dice_roll):
         num_owned_utilites = self.count_similar_owned_properties(owner)
         if num_owned_utilites == 1:
-            owner.liquid_holdings += dice_roll * 4
-            player.liquid_holdings -= dice_roll * 4
+            owner.liquid_holdings += sum(dice_roll) * 4
+            player.liquid_holdings -= sum(dice_roll) * 4
         if num_owned_utilites == 2:
-            owner.liquid_holdings += dice_roll * 10
-            player.liquid_holdings -= dice_roll * 10
+            owner.liquid_holdings += sum(dice_roll) * 10
+            player.liquid_holdings -= sum(dice_roll) * 10
 
     def if_not_owned(self, player):
         if player.liquid_holdings >= self.property.price:
@@ -192,7 +184,7 @@ class UtilityTile(Tile):
 
 
 #Tax, Jail, Card, and Go Tiles cannot be purchased
-class IncomeTaxTile(Tile):
+class TaxTile(Tile):
 
     def deduct_taxes(self, player):
         gross_worth = player.find_gross_worth()
@@ -248,8 +240,42 @@ class ColorTile(Tile):
 
 class CardTile(Tile):
 
-    def draw_card(self, player):
-        pass
+    def draw_card(self, player, deck):
+        card = deck[-1]
+        card.action(player)
+
+def GoToJail(Tile):
+    pass
+
+def FreeParking(Tile):
+    pass
+
+
+class Property:
+
+    def __init__(self, name, price, mortgage_price, type, possible_structures):
+        self.name = name
+        self.price = price
+        self.mortgage_price = mortgage_price
+        #Can be utility, property, rail road, jail, go_deck, or chance_deck
+        self.type = type
+        #List of structure objects that can be built on the property
+        self.possible_structures = possible_structures
+        self.existing_structures = []
+        self.mortgaged = False
+
+    def add_structure(self, structure):
+        if structure in self.possible_structures:
+            self.existing_structures += structure
+        else:
+            raise Exception('REEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE')
+
+
+class Structure():
+    def __init__(self, type, price):
+        self.type = type
+        self.price = price
+
 
 class HelperFunctions:
     
@@ -261,7 +287,6 @@ class HelperFunctions:
     def afforadable(object, player):
         if player.liquid_holdings >= object.price:
             return True
-
 
 
 
