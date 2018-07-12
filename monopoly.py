@@ -109,14 +109,46 @@ class Board:
 
     def __init__(self):
         self.board = [GoTile(0, None, None),
-                      ColorTile(1, 'brown', property=Property(name='Mediterranean Avenue', price=60, mortgage_price=30, possible_structures=[Structure('house', 50, 10), Structure('house', 50, 30), Structure('house', 50, 90), Structure('house', 50, 160), Structure('hotel', 50, 250), Structure('skyscraper', 50, 750)], base_rent=2)),
+                      ColorTile(1, 'brown', property=Property(name='Mediterranean Avenue', price=60, mortgage_price=30, possible_structures=[Structure('house', 50, 10), Structure('house', 50, 30), Structure('house', 50, 90), Structure('house', 50, 160), Structure('hotel', 50, 250)], base_rent=2)),
                       CardTile(2, None, None),
+                      ColorTile(3, 'brown', property=Property(name='Baltic Avenue', price=60, mortgage_price=30, possible_structures=[Structure('house', 50, 20), Structure('house', 50, 60), Structure('house', 50, 180), Structure('house', 50, 320), Structure('hotel', 50, 450)], base_rent=4)),
                       IncomeTaxTile(4, None, None),
                       RailRoadTile(5, None, Property(name='Reading Railroad', price=200, mortgage_price=100 , possible_structures=Structure('train station', 100, 50), base_rent=25)),
+                      ColorTile(6, 'cyan', property=Property(name='Oriental Avenue', price=100, mortgage_price=50, possible_structures=[Structure('house', 50, 30), Structure('house', 50, 90), Structure('house', 50, 270), Structure('house', 50, 400), Structure('hotel', 50, 550)], base_rent=6)),
                       CardTile(7, None, None),
+                      ColorTile(8, 'cyan', property=Property(name='Vermont Avenue', price=100, mortgage_price=50, possible_structures=[Structure('house', 50, 30), Structure('house', 50, 90), Structure('house', 50, 270), Structure('house', 50, 400), Structure('hotel', 50, 550)], base_rent=6)),
+                      ColorTile(9, 'cyan', property=Property(name='Connecticut Avenue', price=100, mortgage_price=50, possible_structures=[Structure('house', 50, 40), Structure('house', 50, 100), Structure('house', 50, 300), Structure('house', 50, 450), Structure('hotel', 50, 600)], base_rent=8)),
                       JailTile(10, None, None),
+                      ColorTile(11, 'pink', property=Property(name='St. Charles Place', price=140, mortgage_price=70, possible_structures=[Structure('house', 100, 50), Structure('house', 100, 150), Structure('house', 100, 450), Structure('house', 100, 625), Structure('hotel', 100, 750)], base_rent=10)),
+                      UtilityTile(12, None, property=Property(name='Electric Company', price=150, mortgage_price=75, possible_structures=None, base_rent=None)),
+                      ColorTile(13, 'pink', property=Property(name='States Avenue', price=140, mortgage_price=70, possible_structures=[Structure('house', 100, 50), Structure('house', 100, 150), Structure('house', 100, 450), Structure('house', 100, 625), Structure('hotel', 100, 750)], base_rent=10)),
+                      ColorTile(14, 'pink', property=Property(name='Virginia Avenue', price=160, mortgage_price=80, possible_structures=[Structure('house', 100, 60), Structure('house', 100, 180), Structure('house', 100, 500), Structure('house', 100, 700), Structure('hotel', 100, 900)], base_rent=12)),
+                      RailRoadTile(15, None, Property(name='Pennsylvania Railroad', price=200, mortgage_price=100 , possible_structures=Structure('train station', 100, 50), base_rent=25)),
+                      ColorTile(16, 'orange', property=Property(name='St. James Place', price=180, mortgage_price=90, possible_structures=[Structure('house', 100, 70), Structure('house', 100, 200), Structure('house', 100, 550), Structure('house', 100, 750), Structure('hotel', 100, 950)], base_rent=14)),
+                      CardTile(17, None, None),
+                      ColorTile(18, 'orange', property=Property(name='Tennessee Avenue', price=180, mortgage_price=90, possible_structures=[Structure('house', 100, 70), Structure('house', 100, 200), Structure('house', 100, 550), Structure('house', 100, 750), Structure('hotel', 100, 950)], base_rent=14)),
+                      ColorTile(19, 'orange', property=Property(name='New York Avenue', price=200, mortgage_price=100, possible_structures=[Structure('house', 100, 80), Structure('house', 100, 220), Structure('house', 100, 600), Structure('house', 100, 800), Structure('hotel', 100, 1000)], base_rent=16)),
+                      FreeParking(20, None, None),
+                      ColorTile(21, 'red', property=Property(name='Kentucky Avenue', price=220, mortgage_price=110, possible_structures=[Structure('house', 150, 90), Structure('house', 150, 250), Structure('house', 150, 700), Structure('house', 150, 875), Structure('hotel', 150, 1050)], base_rent=18)),
+                      CardTile(22, None, None),
+                      ColorTile(23, 'red', property=Property(name='Indiana Avenue', price=220, mortgage_price=110, possible_structures=[Structure('house', 150, 90), Structure('house', 150, 250), Structure('house', 150, 700), Structure('house', 150, 875), Structure('hotel', 150, 1050)], base_rent=18)),
+                      ColorTile(24, 'red', property=Property(name='Illinois Avenue', price=240, mortgage_price=120, possible_structures=[Structure('house', 150, 100), Structure('house', 150, 300), Structure('house', 150, 750), Structure('house', 150, 925), Structure('hotel', 150, 1100)], base_rent=20)),
+                      RailRoadTile(25, None, Property(name='B. & O. Railroad', price=200, mortgage_price=100 , possible_structures=Structure('train station', 100, 50), base_rent=25)),
+                      ColorTile(26, 'yellow', property=Property(name='Atlantic Avenue', price=260, mortgage_price=130, possible_structures=[Structure('house', 150, 110), Structure('house', 150, 330), Structure('house', 150, 800), Structure('house', 150, 975), Structure('hotel', 150, 1150)], base_rent=22)),
+                      ColorTile(27, 'yellow', property=Property(name='Ventnor Avenue', price=260, mortgage_price=130, possible_structures=[Structure('house', 150, 110), Structure('house', 150, 330), Structure('house', 150, 800), Structure('house', 150, 975), Structure('hotel', 150, 1150)], base_rent=22)),
+                      UtilityTile(28, None, property=Property(name='Water Works', price=150, mortgage_price=75, possible_structures=None, base_rent=None)),
+                      ColorTile(29, 'yellow', property=Property(name='Marvin Gardens', price=280, mortgage_price=140, possible_structures=[Structure('house', 150, 120), Structure('house', 150, 360), Structure('house', 150, 850), Structure('house', 150, 1025), Structure('hotel', 150, 1200)], base_rent=24)),
                       GoToJailTile(30, None, None),
-                      LuxuryTaxTile(38, None, None)]
+                      ColorTile(31, 'green', property=Property(name='Pacific Avenue', price=300, mortgage_price=150, possible_structures=[Structure('house', 200, 130), Structure('house', 200, 390), Structure('house', 200, 900), Structure('house', 200, 1100), Structure('hotel', 200, 1275)], base_rent=26)),
+                      ColorTile(32, 'green', property=Property(name='North Carolina Avenue', price=300, mortgage_price=150, possible_structures=[Structure('house', 200, 130), Structure('house', 200, 390), Structure('house', 200, 900), Structure('house', 200, 1100), Structure('hotel', 150, 1275)], base_rent=26)),
+                      CardTile(33, None, None),
+                      ColorTile(34, 'green', property=Property(name='Pennsylvania Avenue', price=320, mortgage_price=150, possible_structures=[Structure('house', 200, 150), Structure('house', 200, 450), Structure('house', 200, 1000), Structure('house', 200, 1200), Structure('hotel', 200, 1400)], base_rent=28)),
+                      RailRoadTile(35, None, Property(name='Short Line', price=200, mortgage_price=100 , possible_structures=Structure('train station', 100, 50), base_rent=25)),
+                      CardTile(36, None, None),
+                      ColorTile(37, 'blue', property=Property(name='Park Place', price=350, mortgage_price=175, possible_structures=[Structure('house', 200, 175), Structure('house', 200, 500), Structure('house', 200, 1100), Structure('house', 200, 1300), Structure('hotel', 200, 1500)], base_rent=35)),
+                      LuxuryTaxTile(38, None, None),
+                      ColorTile(39, 'blue', property=Property(name='Park Place', price=400, mortgage_price=200, possible_structures=[Structure('house', 200, 200), Structure('house', 200, 600), Structure('house', 200, 1400), Structure('house', 200, 1700), Structure('hotel', 200, 2000)], base_rent=50)),
+                      ]
 
 class Tile:
 
@@ -270,7 +302,7 @@ class ColorTile(Tile):
             struct_count = [len(x.property.existing_structrues) for x in filter(lambda x: x.color == self.color, player.property_holdings)]
             if max(struct_count) - min(struct_count) > 1:
                 raise Exception(f'The difference between the minimum and maximum number of structures on the {self.color} tiles has exceeded 1.  Min: {min(struct_count)} Max: {max(struct_count)}')
-            elif len(self.property.existing_structures) == min(struct_count):
+            elif len(self.property.existing_structures) == min(struct_count) and min(struct_count) != max(struct_count):
                 return self.property.possible_structures[min(struct_count)]
             else:
                 return None
