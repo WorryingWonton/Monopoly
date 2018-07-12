@@ -1,4 +1,3 @@
-from monopoly import Tile, Board
 def advance_to_go(player):
     #What position is 'Go'?
     player.position = 0

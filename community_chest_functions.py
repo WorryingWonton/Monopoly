@@ -1,5 +1,4 @@
 #I'm going to put all of the card action functions here.
-from monopoly import HelperFunctions
 #Community Chest Functions
 def advance_to_go(player):
     #What position is 'Go'?
