@@ -108,24 +108,22 @@ class Player:
 class Board:
 
     def __init__(self):
-        self.board = [GoTile(0, None, None, 'go'),
-                      CardTile(2, None, None, 'chance'),
-                      IncomeTaxTile(4, None, None, 'income_tax'),
-                      RailRoadTile(5, None, Property(name='Reading Railroad', price=200, mortgage_price=100 , possible_structures=Structure('train station', 100, 50), base_rent=25), tile_type = 'railroad'),
-                      CardTile(7, None, None, 'community'),
-                      JailTile(10, None, None, 'jail'),
-                      GoToJailTile(30, None, None, 'gotojail'),
-                      LuxuryTaxTile(38, None, None, 'luxury_tax')]
+        self.board = [GoTile(0, None, None),
+                      ColorTile(1, 'brown', property=Property(name='Mediterranean Avenue', price=60, mortgage_price=30, possible_structures=[Structure('house', 50, 10), Structure('house', 50, 30), Structure('house', 50, 90), Structure('house', 50, 160), Structure('hotel', 50, 250), Structure('skyscraper', 50, 750)], base_rent=2)),
+                      CardTile(2, None, None),
+                      IncomeTaxTile(4, None, None),
+                      RailRoadTile(5, None, Property(name='Reading Railroad', price=200, mortgage_price=100 , possible_structures=Structure('train station', 100, 50), base_rent=25)),
+                      CardTile(7, None, None),
+                      JailTile(10, None, None),
+                      GoToJailTile(30, None, None),
+                      LuxuryTaxTile(38, None, None)]
 
 class Tile:
 
-    def __init__(self, position, color, property, tile_type):
+    def __init__(self, position, color, property):
         self.position = position
         self.color = color
         self.property = property
-        #can be color, chance, community, jail, gotojail, utility, income_tax, luxury_tax, railroad, go
-        self.tile_type = tile_type
-
 
     #Find owner of the tile in question, if no owner, return None
     def find_owner(self, players):
@@ -155,7 +153,7 @@ class Tile:
     def count_similar_owned_properties(self, owner):
         num_tiles = 0
         for tile in owner.property_holdings:
-            if tile.tile_type == self.tile_type:
+            if isinstance(self, tile):
                 num_tiles += 1
         return num_tiles
 
@@ -172,8 +170,8 @@ class RailRoadTile(Tile):
             owner.liquid_holdings += self.property.base_rent * 2**(num_owned_railroads - 1)
 
     def build_train_station(self, player):
-        if player.liquid_holdings >= self.property.possible_structures.price:
-            player.liquid_holdings -= self.property.possible_structures.price
+        if player.liquid_holdings >= self.property.possible_structures[0].price:
+            player.liquid_holdings -= self.property.possible_structures[0].price
             self.property.existing_structures.append(self.property.possible_structures)
 
 
@@ -254,24 +252,38 @@ class ColorTile(Tile):
 
     def assess_rent(self, owner):
         if self.color in owner.determine_buildable_tiles():
-            #Structures case
-            if len(self.property.existing_structures) > 0:
+            #Structures Case
+            if len(self.property.existing_structures) > 1:
                 return self.property.existing_structures[-1].rent
-            #Monopoly case
+            #Monopoly case (But not yet any structures)
             else:
                 return self.property.base_rent * 2
         #Base case
         else:
             return self.property.base_rent
 
-    def build_structues(self, player):
-        target_structure = self.property.possible_structures[len(self.property.existing_structures)]
-        cost = target_structure.price
-        if cost <= player.liquid_holdings:
-            player.liquid_holdings -= cost
-            self.property.existing_structures.append(target_structure)
+    #If possible, returns the next buildable structure object from the Tile's list of possible structure
+    def build_evenly(self, player):
+        if len(self.property.existing_structures) == 0:
+            return self.property.possible_structures[0]
         else:
-            return f'Insufficent funds.  Your liquid holdings total {player.liquid_holdings}, the structure\'s price is {cost}'
+            struct_count = [len(x.property.existing_structrues) for x in filter(lambda x: x.color == self.color, player.property_holdings)]
+            if max(struct_count) - min(struct_count) > 1:
+                raise Exception(f'The difference between the minimum and maximum number of structures on the {self.color} tiles has exceeded 1.  Min: {min(struct_count)} Max: {max(struct_count)}')
+            elif len(self.property.existing_structures) == min(struct_count):
+                return self.property.possible_structures[min(struct_count)]
+            else:
+                return None
+
+    def build_structues(self, player):
+        if self.color in player.determine_buildable_tiles():
+            new_structure = self.build_evenly(player)
+            if new_structure:
+                if new_structure.price <= player.liquid_holdings:
+                    self.property.existing_structures.append(new_structure)
+                    player.liquid_holdings -= new_structure.price
+                else:
+                    return f'Insufficent funds.  Your liquid holdings total {player.liquid_holdings}, the structure\'s price is {new_structure.price}'
 
 class CardTile(Tile):
 
