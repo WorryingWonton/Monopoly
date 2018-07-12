@@ -23,6 +23,7 @@ def turn_sequencer(game):
 def if_jailed(player):
     pass
 
+
 def handle_builds(player):
     buildable_colors = Player.determine_buildable_tiles(player)
     buildable_color_tiles = []
@@ -35,7 +36,7 @@ def handle_builds(player):
     while bct_index < len(buildable_color_tiles):
         buy_decision = strtobool(input(f'Do you want to buy {buildable_color_tiles[bct_index]}?  Enter yes or no:  ').lower())
         if buy_decision:
-            buildable_color_tiles[bct_index].build_evenly()
+            buildable_color_tiles[bct_index].build_structures()
             return
         bct_index += 1
     rr_index = 0
@@ -45,6 +46,12 @@ def handle_builds(player):
             railroads[rr_index].build_train_station()
             return
         rr_index += 1
+
+def handle_buying(game, active_player):
+    pass
+
+def handle_card_tiles(game,active_player):
+    pass
 
 def add_players():
     player_names = []

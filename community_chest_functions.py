@@ -1,7 +1,4 @@
-#I'm going to put all of the card action functions here.
-#Community Chest Functions
 def advance_to_go(player):
-    #What position is 'Go'?
     player.position = 0
     player.liquid_holdings += 200
 
@@ -16,10 +13,13 @@ def get_out_jail_free(player):
 def bank_error_in_your_favor(player):
     player.liquid_holdings += 200
 
+def from_sale_of_stock_50(player):
+    player.liquid_holdings += 50
+
 def doctors_fee(player):
     player.liquid_holdings -= 200
 
-def grand_opera_night_opening(player, monopoly):
+def grand_opera_night(player, monopoly):
     for person in monopoly.players:
         player.liquid_holdings += 50
         person.liquid_holdings -= 50
@@ -48,12 +48,12 @@ def receive_25_consultancy_fee(player):
     player.liquid_holdings += 25
 
 def you_are_assessed_for_street_repairs(player):
-    for property in player.property_holdings:
-        if property.lower() == 'hotel':
-            player.liquid_holdings -= 115
-        #I'm not sure if there are other kinds of properties
-        if property.lower() == 'house':
-            player.liquid_holdings -= 40
+    for tile in player.property_holdings:
+        if len(tile.property.existing_structures) > 0:
+            if tile.property.existing_structures[-1].type == 'hotel':
+                player.liquid_holdings -= 115
+            if tile.property.existing_structures[-1].type == 'house':
+                player.liquid_holdings -= 40
 
 def you_have_won_second_prize_in_a_beauty_contest(player):
     player.liquid_holdings += 10
