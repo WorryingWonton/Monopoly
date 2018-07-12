@@ -6,12 +6,12 @@ def run_stuff():
     player_names = add_players()
     for player in player_names:
         game.add_player(player)
-    print(game.players)
     turn_sequencer(game)
 
 
 def turn_sequencer(game):
     while len(game.players) > 1:
+        print_game_state(game)
         active_player = game.advance_turn()
         if active_player.jailed:
             JailTile.jailed_dice_roll(active_player)
@@ -19,9 +19,29 @@ def turn_sequencer(game):
             active_player.position += sum(HelperFunctions.roll_dice())
         if len(active_player.property_holdings) > 0:
             handle_builds(active_player)
+        action = input('This will do something')
+        game.eject_bankrupt_players()
+    return f'{game.players[0].name} has won the game.'
 
 def if_jailed(player):
     pass
+
+def print_game_state(game):
+    #print state of players (liquidities, properties, and debts)
+    for player in game.players:
+        player_state = f'\nPlayer: {player.name} at Position: {player.position} on Tile: {type(game.board[player.position % 40])} \nLiquid Assets: {player.liquid_holdings} \nDebts: {player.debts} \nProperty Holdings: '
+        if len(player.property_holdings) > 0:
+            for tile in player.property_holdings:
+                player_state += f'  Position:  {tile.position} - Property Name: {tile.property.name} - Structures: '
+                if len(tile.property.existing_structures) > 0:
+                    player_state += '- '
+                    for structure in tile.property.existing_structures:
+                        player_state += f'{structure.type} -'
+                    player_state += '\n'
+                else:
+                    player_state += 'None\n'
+        print(player_state + '\n')
+        
 
 
 def handle_builds(player):
