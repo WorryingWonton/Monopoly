@@ -34,10 +34,11 @@ class Monopoly:
 
 class Card:
 
-    def __init__(self, face, action, holdable):
+    def __init__(self, face, action, holdable, passes_go):
         self.face = face
         self.action = action
         self.holdable = holdable
+        self.passes_go = passes_go
 
 class Deck:
 
@@ -48,25 +49,40 @@ class Deck:
 
     def make_deck(self):
         if self.sub_type.lower() == 'chance':
-            self.cards = [Card('Advance to Go', advance_to_go, False),
-                          Card('Bank error in your favor', bank_error_in_your_favor, False),
-                          Card('Doctor\'s fees', doctors_fee, False),
-                          Card('From sale of stock you get $50', from_sale_of_stock_50, False),
-                          Card('Get out of Jail Free', get_out_jail_free, True),
-                          Card('Go to Jail', go_to_jail, False),
-                          Card('Grand Opera Night', grand_opera_night, False),
-                          Card('Holiday', holiday_fund_matures, False),
-                          Card('Income tax refund', income_tax_refund, False),
-                          Card('Life insurance matures', life_insurace_matures, False),
-                          Card('Pay hospital fees', pay_hospital_fees, False),
-                          Card('Pay school fees', pay_school_fees, False),
-                          Card('Receive $25 consultancy fee', receive_25_consultancy_fee, False),
-                          Card('Your are assessed for street repairs', you_are_assessed_for_street_repairs, False),
-                          Card('You have won second prize in a beauty contest', you_have_won_second_prize_in_a_beauty_contest, False),
-                          Card('You inherit $100', you_inherit_100, False)
+            self.cards = [Card('Advance to Go', advance_to_go, False, False),
+                          Card('Bank error in your favor', bank_error_in_your_favor, False, False),
+                          Card('Doctor\'s fees', doctors_fee, False, False),
+                          Card('From sale of stock you get $50', from_sale_of_stock_50, False, False),
+                          Card('Get out of Jail Free', get_out_jail_free, True, False),
+                          Card('Go to Jail', go_to_jail, False, False),
+                          Card('Grand Opera Night', grand_opera_night, False, False),
+                          Card('Holiday', holiday_fund_matures, False, False),
+                          Card('Income tax refund', income_tax_refund, False, False),
+                          Card('Life insurance matures', life_insurace_matures, False, False),
+                          Card('Pay hospital fees', pay_hospital_fees, False, False),
+                          Card('Pay school fees', pay_school_fees, False, False),
+                          Card('Receive $25 consultancy fee', receive_25_consultancy_fee, False, False),
+                          Card('Your are assessed for street repairs', you_are_assessed_for_street_repairs, False, False),
+                          Card('You have won second prize in a beauty contest', you_have_won_second_prize_in_a_beauty_contest, False, False),
+                          Card('You inherit $100', you_inherit_100, False, False)
                           ]
         elif self.sub_type.lower() == 'community':
-            self.cards = []
+            self.cards = [Card('Advance to Go', advance_to_go, False, False),
+                          Card('Advance to Illinois Ave.', advance_to_illinois_ave, False, True),
+                          Card('Advance to St. Charles Place', advance_to_st_charles_place, False, True),
+                          Card('Advance toklen to nearest Utility', advance_to_nearest_utility, False, False),
+                          Card('Advance token to the nearest Railraod', advance_token_to_nearset_railroad, False, False),
+                          Card('Bank pays you dividend of $50', bank_pays_you_50_dividend, False, False),
+                          Card('Get out of Jial Free', get_out_jail_free, True, False),
+                          Card('Go back 3 Spaces', go_back_3_spaces, False, False),
+                          Card('Go to Jail', go_to_jail, False, False),
+                          Card('Make general repairs on all your property', make_general_repairs_on_all_property, False, False),
+                          Card('Pay poor tax of $15', pay_poor_tax, False, False),
+                          Card('Take a trip to Reading Railroad', take_trip_to_reading_railroad, False, True),
+                          Card('Take a walk on the Boardwalk', take_a_walk_on_boardwalk, False, False),
+                          Card('You have been elected Chairman of the Board', chairman_of_the_board, False, False),
+                          Card('Your building loan matures', your_building_loan_matures, False, False),
+                          Card('You have won a crossword competition', you_have_won_a_crossword_competition, False, False)]
         else:
             raise Exception(f'Unhandled subtype {self.sub_type}, acceptable subtypes are Chance and Community')
 
@@ -163,7 +179,7 @@ class Board:
                       CardTile(36, None, None),
                       ColorTile(37, 'blue', property=Property(name='Park Place', price=350, mortgage_price=175, possible_structures=[Structure('house', 200, 175), Structure('house', 200, 500), Structure('house', 200, 1100), Structure('house', 200, 1300), Structure('hotel', 200, 1500)], base_rent=35)),
                       LuxuryTaxTile(38, None, None),
-                      ColorTile(39, 'blue', property=Property(name='Park Place', price=400, mortgage_price=200, possible_structures=[Structure('house', 200, 200), Structure('house', 200, 600), Structure('house', 200, 1400), Structure('house', 200, 1700), Structure('hotel', 200, 2000)], base_rent=50)),
+                      ColorTile(39, 'blue', property=Property(name='Boardwalk', price=400, mortgage_price=200, possible_structures=[Structure('house', 200, 200), Structure('house', 200, 600), Structure('house', 200, 1400), Structure('house', 200, 1700), Structure('hotel', 200, 2000)], base_rent=50)),
                       ]
 
 class Tile:

@@ -53,7 +53,7 @@ def you_are_assessed_for_street_repairs(player):
             if tile.property.existing_structures[-1].type == 'hotel':
                 player.liquid_holdings -= 115
             if tile.property.existing_structures[-1].type == 'house':
-                player.liquid_holdings -= 40
+                player.liquid_holdings -= len(tile.property.existing_structures) * 40
 
 def you_have_won_second_prize_in_a_beauty_contest(player):
     player.liquid_holdings += 10
