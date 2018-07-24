@@ -94,7 +94,7 @@ class Deck:
 
     def make_deck(self):
         if self.sub_type.lower() == 'chance':
-            self.cards = [Card('Advance to Go', advance_to_go, False, False),
+            self.cards = [Card('Advance to Go', advance_to_go, holdable=False, passes_go=False),
                           Card('Bank error in your favor', bank_error_in_your_favor, False, False),
                           Card('Doctor\'s fees', doctors_fee, False, False),
                           Card('From sale of stock you get $50', from_sale_of_stock_50, False, False),
@@ -202,9 +202,9 @@ class Tile:
     def if_owned(self, player, owner, dice_roll):
         pass
 
-    def if_not_owned(self, player):
+    def if_not_owned(self, player, buy_decision):
         if player.liquid_holdings >= self.property.price:
-            buy_decision = strtobool(input(f'{self.property.name} is available.  \nYou can buy it for {self.property.price} or mortage it for {self.property.mortgage_price}\n Enter \'Buy\' \'Mortgage\' or \'Pass\'').lower())
+            # buy_decision = strtobool(input(f'{self.property.name} is available.  \nYou can buy it for {self.property.price} or mortage it for {self.property.mortgage_price}\n Enter \'Buy\' \'Mortgage\' or \'Pass\'').lower())
             if buy_decision == 'buy':
                 player.property_holdings.append(self)
                 player.liquid_holdings -= self.property.price
@@ -222,6 +222,30 @@ class Tile:
             if isinstance(self, tile):
                 num_tiles += 1
         return num_tiles
+
+
+    def determine_if_sellable(self, player):
+        if self in player.property_holdings:
+            if len(self.property.existing_structures) > 0:
+                return False
+            else:
+                return True
+        else:
+            return False
+
+
+    # def sell_property(self, player):
+    #     if self.property:
+    #         if self.property in player.property_holdings:
+    #             if self.color:
+    #                 pass
+    #             else:
+    #                 pass
+    #         else:
+    #             raise Exception(f'The property on {self} at position {self.position} is not owned by {player.name}')
+    #     else:
+    #         raise Exception(f'Tile: {self} at position {self.position} cannot have properties on it')
+    #     pass
 
 class RailRoadTile(Tile):
 
@@ -266,15 +290,10 @@ class IncomeTaxTile(Tile):
     @staticmethod
     def deduct_taxes(player):
         gross_worth = player.find_gross_worth()
-        if gross_worth < 200:
+        if gross_worth <= 2000:
             player.liquid_holdings -= .1 * gross_worth
-        if gross_worth >= 200:
-            tax_decision =input(f'Your net worth is {gross_worth}, which is >= 200, would you like to pay $200, or ten percent of your net worth, which totals ${0.1 * gross_worth}\n Enter 200 to pay $200, or 10 to pay 10%')
-            if tax_decision == '200':
-                player.liquid_holdings -= 200
-            else:
-                player.liquid_holdings *= .9
-
+        else:
+            player.liquid_holdings -= 200
 
 class JailTile(Tile):
 
@@ -329,27 +348,39 @@ class ColorTile(Tile):
             return self.property.base_rent
 
     #If possible, returns the next buildable structure object from the Tile's list of possible structure
-    def build_evenly(self, player):
+    #add_or_remove = boolean for if the method is being called to add or remove a structure
+    #Turns out adding the ability to remove structures following the build even rule took more than two lines of code, but still a simple change
+    def build_evenly(self, player, add_structure):
         if len(self.property.existing_structures) == 0:
-            return self.property.possible_structures[0]
+            if add_structure:
+                return self.property.possible_structures[0]
+            else:
+                return None
         else:
             struct_count = [len(x.property.existing_structrues) for x in filter(lambda x: x.color == self.color, player.property_holdings)]
             if max(struct_count) - min(struct_count) > 1:
                 raise Exception(f'The difference between the minimum and maximum number of structures on the {self.color} tiles has exceeded 1.  Min: {min(struct_count)} Max: {max(struct_count)}')
-            elif len(self.property.existing_structures) == min(struct_count) and min(struct_count) != max(struct_count):
+
+            elif add_structure and len(self.property.existing_structures) == min(struct_count) and min(struct_count) != max(struct_count):
                 return self.property.possible_structures[min(struct_count)]
+            elif len(self.property.existing_structures) == max(struct_count):
+                return self.property.existing_structures[-1]
             else:
                 return None
 
     def build_structues(self, player):
         if self.color in player.determine_buildable_tiles():
-            new_structure = self.build_evenly(player)
+            new_structure = self.build_evenly(player, False)
             if new_structure:
                 if new_structure.price <= player.liquid_holdings:
                     self.property.existing_structures.append(new_structure)
                     player.liquid_holdings -= new_structure.price
                 else:
                     return f'Insufficent funds.  Your liquid holdings total {player.liquid_holdings}, the structure\'s price is {new_structure.price}'
+
+    def remove_structures(self, player):
+        if self in player.property_holdings and self.color in player.determine_buildable_tiles():
+            pass
 
 class CardTile(Tile):
 
@@ -407,9 +438,16 @@ class HelperFunctions:
         if player.liquid_holdings >= object.price:
             return True
 
+#TODO Refactor Tile classes to not prompt for user input.
+    #turn sequencer should work as follows for determining buyability:  1.  Determine if property is present at the player's position.  2.  Determine if the property is affordable.  3.  Determine if the property is unowned
+        #If all three criteria are met, the relevant helper function should return True, else False.
+        #If the helper function returns True, call the buy_property method on the Tile IF the player decides they want the property.
+            #Else: The property goes up for auction
 
-
-
+#TODO Add Auction method to Property class
+    #The auction runs continuosly until all but one of the players passes.
+        #The player with the highest bid wins in this condition
+    #If all players pass on the first round, the auction stops
 
 
 

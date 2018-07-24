@@ -19,6 +19,9 @@ def turn_sequencer(game):
             active_player.position += sum(HelperFunctions.roll_dice())
         if len(active_player.property_holdings) > 0:
             handle_builds(active_player)
+        decision_list = []
+        #If a player lands on a tile, if_owned, rent will be deducted according to the if_owned method of the tile object
+        #if the tile is not owned, the if_not_owned method will be called on the Tile, and the output of that appended to the decision list
         action = input('This will do something')
         game.eject_bankrupt_players()
     return f'{game.players[0].name} has won the game.'
@@ -41,7 +44,7 @@ def print_game_state(game):
                 else:
                     player_state += 'None\n'
         print(player_state + '\n')
-        
+
 
 
 def handle_builds(player):
@@ -68,7 +71,7 @@ def handle_builds(player):
         rr_index += 1
 
 def handle_buying(game, active_player):
-    pass
+    active_tile = game.board[active_player.position]
 
 def handle_card_tiles(game,active_player):
     pass
