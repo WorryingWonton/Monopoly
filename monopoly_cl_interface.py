@@ -1,7 +1,7 @@
 from monopoly import *
 from distutils.util import strtobool
 
-def run_stuff():
+def initialize_game():
     game = Monopoly()
     player_names = add_players()
     for player in player_names:

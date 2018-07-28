@@ -233,19 +233,14 @@ class Tile:
         else:
             return False
 
+    def sell_property(self, player):
+        if self in player.property_holdings:
+            player.property_holdings.remove(self)
+            player.liquid_holdings += self.property.price
+        else:
+            raise Exception(f'{self.property.name} is not owned by {player.name}')
 
-    # def sell_property(self, player):
-    #     if self.property:
-    #         if self.property in player.property_holdings:
-    #             if self.color:
-    #                 pass
-    #             else:
-    #                 pass
-    #         else:
-    #             raise Exception(f'The property on {self} at position {self.position} is not owned by {player.name}')
-    #     else:
-    #         raise Exception(f'Tile: {self} at position {self.position} cannot have properties on it')
-    #     pass
+
 
 class RailRoadTile(Tile):
 
@@ -378,9 +373,9 @@ class ColorTile(Tile):
                 else:
                     return f'Insufficent funds.  Your liquid holdings total {player.liquid_holdings}, the structure\'s price is {new_structure.price}'
 
-    def remove_structures(self, player):
-        if self in player.property_holdings and self.color in player.determine_buildable_tiles():
-            pass
+    #It might make sense to make this more defensive, but the determineation of whether or not a structure can be removed is handled by self.build_evenly()
+    def remove_structures(self):
+        self.property.existing_structures.remove(-1)
 
 class CardTile(Tile):
 
@@ -438,18 +433,19 @@ class HelperFunctions:
         if player.liquid_holdings >= object.price:
             return True
 
-#TODO Refactor Tile classes to not prompt for user input.
+#TODO Refactor Tile classes to not prompt for user input. [Done]
     #turn sequencer should work as follows for determining buyability:  1.  Determine if property is present at the player's position.  2.  Determine if the property is affordable.  3.  Determine if the property is unowned
         #If all three criteria are met, the relevant helper function should return True, else False.
         #If the helper function returns True, call the buy_property method on the Tile IF the player decides they want the property.
             #Else: The property goes up for auction
 
-#TODO Add Auction method to Property class
+#TODO Add Auction method to Property class [Optional]
     #The auction runs continuosly until all but one of the players passes.
         #The player with the highest bid wins in this condition
     #If all players pass on the first round, the auction stops
 
 
+#TODO Ensure when changes are made to Property tiles as a result of player action, that the Tile objects in the Board object are updated concurrently
 
 
     
