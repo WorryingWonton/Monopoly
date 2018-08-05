@@ -4,8 +4,6 @@ import monopoly_cl_interface
     #1.1 Pass interface current game state, if displaying it make sense
 #2:  Determine if active_player.jailed
     #If active_player.jailed: run JailTile.jailed_dice_roll(active_player)
-        #If player.jailed becomes False:  Perform Tile action at player.position
-        #If player.jailed remains True:  GoTo step 3
     #Else: Perform Tile action at player.position
 #3 Run game.eject_bankrupt_players
 #3 Determine board state
@@ -18,8 +16,8 @@ def turn_sequencer(game):
         active_player = game.advance_turn()
         if active_player.jailed:
             JailTile.jailed_dice_roll(active_player)
-            if not active_player.jailed:
-                game.board[2]
+        else:
+            Do the thing
 
 
 
