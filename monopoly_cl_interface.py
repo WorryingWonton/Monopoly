@@ -1,5 +1,4 @@
 from monopoly import *
-from distutils.util import strtobool
 
 def initialize_game():
     game = Monopoly()
@@ -93,4 +92,4 @@ def add_players():
         raise Exception('Monopoly requires two more players.')
 
 if __name__ == '__main__':
-    run_stuff()
+    initialize_game()
