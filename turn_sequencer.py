@@ -12,14 +12,30 @@ import monopoly_cl_interface
     #Determine state of active_player.property_holdings:
         #Use Player.determine_buildable_tiles() to determine which color tiles, if any, can have structures built upon them
         #
+
+#At player.position, determine if Tile.property:
+#     if Tile.property:
+#         call Tile.find_owner
+#         if Tile.owner
+#     if owned, call Tile.if_owned()
+#     i
 def turn_sequencer(game):
     while len(game.players) > 1:
         print(monopoly_cl_interface.print_game_state(game))
         active_player = game.advance_turn()
         if active_player.jailed:
             JailTile.jailed_dice_roll(active_player)
-            if not active_player.jailed:
-                game.board[2]
+        else:
+            dice_roll = HelperFunctions.roll_dice()
+            active_player.position += sum(dice_roll)
+            working_tile = game.board[active_player.position]
+            if working_tile.property:
+                owner = working_tile.find_owner()
+                if owner:
+                    working_tile.if_owned(player=active_player, owner=owner, dice_roll=dice_roll)
+                else:
+                    buy_decsion = monopoly_cl_interface.obtain_buy_decision(active_player)
+                    working_tile.if_not_owned(player=active_player)
 
 
 

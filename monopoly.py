@@ -213,7 +213,7 @@ class Tile:
                 self.property.mortgaged = True
                 player.property_holdings.append(self)
             else:
-                pass
+                return None
 
     #Below method finds out how many similar properties an owner has
     def count_similar_owned_properties(self, owner):
