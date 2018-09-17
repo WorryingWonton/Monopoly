@@ -191,6 +191,8 @@ class Tile:
         self.color = color
         self.property = property
 
+#Should be able to tell if the property on the Tile is on the market, how many like tiles the Owner of the landed on tile has, determine if the Tile can be sold (I think this may be unique to color tiles)
+class OwnableTile(Tile):
     #Find owner of the tile in question, if no owner, return None
     def find_owner(self, players):
         for player in players:
@@ -240,9 +242,12 @@ class Tile:
         else:
             raise Exception(f'{self.property.name} is not owned by {player.name}')
 
+class UnownableTile(Tile):
+    pass
 
 
-class RailRoadTile(Tile):
+
+class RailRoadTile(OwnableTile):
 
     def if_owned(self, player, owner, dice_roll=None):
         num_owned_railroads = self.count_similar_owned_properties(owner)
@@ -261,7 +266,7 @@ class RailRoadTile(Tile):
 
 
 #This gets a bit weird...  So I need to know the size of the dice roll that caused the player to land on this tile
-class UtilityTile(Tile):
+class UtilityTile(OwnableTile):
 
     def if_owned(self, player, owner, dice_roll):
         num_owned_utilites = self.count_similar_owned_properties(owner)
@@ -280,7 +285,7 @@ class UtilityTile(Tile):
 
 
 #Tax, Jail, Card, and Go Tiles cannot be purchased
-class IncomeTaxTile(Tile):
+class IncomeTaxTile(OwnableTile):
 
     @staticmethod
     def deduct_taxes(player):
@@ -290,7 +295,7 @@ class IncomeTaxTile(Tile):
         else:
             player.liquid_holdings -= 200
 
-class JailTile(Tile):
+class JailTile(UnownableTile):
 
     @staticmethod
     def jailed_dice_roll(player):
@@ -316,13 +321,13 @@ class JailTile(Tile):
         player.position += sum(HelperFunctions.roll_dice())
         player.jailed = False
 
-class GoTile(Tile):
+class GoTile(UnownableTile):
 
     @staticmethod
     def give_funds(player):
         player.liquid_holdings += 200
 
-class ColorTile(Tile):
+class ColorTile(OwnableTile):
     #Determine how many tiles the owner of this tile has, determine the number of structures on this tile, determine if mortgaged, deduct rent
     def if_owned(self, player, owner, dice_roll=None):
         rent = self.assess_rent(owner)
@@ -377,21 +382,21 @@ class ColorTile(Tile):
     def remove_structures(self):
         self.property.existing_structures.remove(-1)
 
-class CardTile(Tile):
+class CardTile(UnownableTile):
 
     @staticmethod
     def draw_card(player, deck):
         card = deck[-1]
         card.action(player)
 
-class GoToJailTile(Tile):
+class GoToJailTile(UnownableTile):
 
     @staticmethod
     def go_to_jail(player):
         player.jailed = True
         player.position = 10
 
-class LuxuryTaxTile(Tile):
+class LuxuryTaxTile(UnownableTile):
 
     @staticmethod
     def pay_luxury_tax(player):
@@ -447,7 +452,7 @@ class HelperFunctions:
 
 #TODO Ensure when changes are made to Property tiles as a result of player action, that the Tile objects in the Board object are updated concurrently
 
-
+#TODO Restructure the Tile objects into Ownable and Unownable subtypes  (try to get rid of as much duplication as possible)
     
 
         
