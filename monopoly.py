@@ -3,6 +3,7 @@ from distutils.util import strtobool
 #This feels like I might be creating a circular dependency between these modules and monopoly, since these import from monopoly and monopoly imports from them
 from community_chest_functions import *
 from chance_deck_functions import *
+import attr
 
 class Monopoly:
 
@@ -182,19 +183,27 @@ class Player:
         return buildable_list
 
 
+class Property:
 
+    def __init__(self, name, price, mortgage_price, possible_structures, base_rent):
+        self.name = name
+        self.price = price
+        self.mortgage_price = mortgage_price
+        #List of structure objects that can be built on the property
+        self.possible_structures = possible_structures
+        self.base_rent = base_rent
+        self.existing_structures = []
+        self.mortgaged = False
 
+@attr.s
 class Tile:
-
-    def __init__(self, position):
-        self.position = position
+    position = attr.ib(type=int)
 
 
 #Should be able to tell if the property on the Tile is on the market, how many like tiles the Owner of the landed on tile has, determine if the Tile can be sold (I think this may be unique to color tiles)
+@attr.s
 class OwnableTile(Tile):
-    def __init__(self, position, property):
-        super().__init__(position)
-        self.property = property
+    property: Property = attr.ib()
 
     #Find owner of the tile in question, if no owner, return None
     def find_owner(self, players):
