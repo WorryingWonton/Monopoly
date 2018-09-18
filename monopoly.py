@@ -186,13 +186,16 @@ class Player:
 
 class Tile:
 
-    def __init__(self, position, color, property):
+    def __init__(self, position):
         self.position = position
-        self.color = color
-        self.property = property
+
 
 #Should be able to tell if the property on the Tile is on the market, how many like tiles the Owner of the landed on tile has, determine if the Tile can be sold (I think this may be unique to color tiles)
 class OwnableTile(Tile):
+    def __init__(self, position, property):
+        super().__init__(position)
+        self.property = property
+
     #Find owner of the tile in question, if no owner, return None
     def find_owner(self, players):
         for player in players:
@@ -328,6 +331,10 @@ class GoTile(UnownableTile):
         player.liquid_holdings += 200
 
 class ColorTile(OwnableTile):
+    def __init__(self, position, property, color):
+        super().__init__(position, property)
+        self.color = color
+
     #Determine how many tiles the owner of this tile has, determine the number of structures on this tile, determine if mortgaged, deduct rent
     def if_owned(self, player, owner, dice_roll=None):
         rent = self.assess_rent(owner)
