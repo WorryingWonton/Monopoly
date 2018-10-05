@@ -10,6 +10,13 @@ class TestMonopolyInitialization(unittest.TestCase):
         self.assertEqual(16, len(game_instance.community_deck.cards))
         self.assertEqual(0, game_instance.turns)
 
+class TestPlayerInitialization(unittest.TestCase):
+    def test_add_player_method(self):
+        game = Monopoly()
+        game.add_player('Dave')
+        self.assertEqual('Dave', game.players[0].name)
+        # self.assertEqual(1500, game.players[0].)
+
 class TestCards(unittest.TestCase):
     #If a card is holdable, and the active_player opts to hold the card, then the card will be removed from the deck, and added to the active_player's hand
     #Else: Perform the action associated with the card, and move it to the end of the card list for that particular deck.
