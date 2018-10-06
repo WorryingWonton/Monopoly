@@ -18,7 +18,7 @@ class Monopoly:
         self.turns = 0
 
     def add_player(self, name):
-        self.players.append(Player(name))
+        self.players.append(Player(name, game=self))
 
     #Checks value of net value of assets for each player, if sum(player.debts) >= player.liquid_holdings (ie the net worth of the player is zero), then they are removed from the list of players
     def eject_bankrupt_players(self):
@@ -169,7 +169,7 @@ class Deck:
 
 class Player:
 
-    def __init__(self, name):
+    def __init__(self, name, game):
         self.name = name
         self.position = 0
         self.liquid_holdings = 1500
@@ -180,6 +180,7 @@ class Player:
         #Might axe this attribute after finishing the Tile subclasses, I don't think anything in the game is dependent upon knowing if the player is jailed or not jailed, aside from the dice roll method
         self.jailed = False
         self.hand = []
+        self.game = game
 
     def find_gross_worth(self):
         gross_worth = self.liquid_holdings
@@ -214,6 +215,9 @@ class Player:
 
                 buildable_list.append(color)
         return buildable_list
+
+    def get_tile_at_player_position(self):
+        return Monopoly().board[self.position]
 
 
 

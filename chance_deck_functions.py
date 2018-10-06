@@ -26,7 +26,7 @@ def advance_to_nearest_utility(player):
 
 @property
 def advance_token_to_nearset_railroad(player, board):
-    while not isinstance(board[player.position], RailRoadTile):
+    while not isinstance(player.game.board[player.position], RailRoadTile):
         player.increment_position(1)
     working_tile = board[player.position]
     tile_owner = working_tile.find_owner()
