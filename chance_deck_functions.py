@@ -1,5 +1,6 @@
 from monopoly_helper_functions import HelperFunctions
 
+
 def advance_to_go(player):
     #What position is 'Go'?
     player.position = 0
@@ -24,12 +25,12 @@ def advance_to_nearest_utility(player):
         player.position = 28
     player.liquid_holdings -= 10 * sum(HelperFunctions.roll_dice())
 
-@property
-def advance_token_to_nearset_railroad(player, board):
-    while not isinstance(player.game.board[player.position], RailRoadTile):
-        player.increment_position(1)
-    working_tile = board[player.position]
-    tile_owner = working_tile.find_owner()
+
+def advance_token_to_nearset_railroad(player):
+    while not isinstance(player.get_tile_at_player_position(), type(player.game.board[5])):
+        player.advance_position(1)
+    working_tile = player.get_tile_at_player_position()
+    tile_owner = working_tile.find_owner(player.game.players)
     if tile_owner:
         working_tile.if_owned(player, tile_owner)
         working_tile.if_owned(player, tile_owner)

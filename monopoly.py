@@ -217,11 +217,7 @@ class Player:
         return buildable_list
 
     def get_tile_at_player_position(self):
-        return Monopoly().board[self.position]
-
-
-
-
+        return self.game.board[self.position]
 
 class Property:
 
@@ -479,21 +475,6 @@ class Structure():
 
 
 
-#TODO Refactor Tile classes to not prompt for user input. [Done]
-    #turn sequencer should work as follows for determining buyability:  1.  Determine if property is present at the player's position.  2.  Determine if the property is affordable.  3.  Determine if the property is unowned
-        #If all three criteria are met, the relevant helper function should return True, else False.
-        #If the helper function returns True, call the buy_property method on the Tile IF the player decides they want the property.
-            #Else: The property goes up for auction
 
-#TODO Add Auction method to Property class [Optional]
-    #The auction runs continuosly until all but one of the players passes.
-        #The player with the highest bid wins in this condition
-    #If all players pass on the first round, the auction stops
-
-
-#TODO Ensure when changes are made to Property tiles as a result of player action, that the Tile objects in the Board object are updated concurrently
-
-#TODO Restructure the Tile objects into Ownable and Unownable subtypes  (try to get rid of as much duplication as possible)
-    
 
         

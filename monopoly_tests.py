@@ -22,7 +22,7 @@ class TestCards(unittest.TestCase):
     #Else: Perform the action associated with the card, and move it to the end of the card list for that particular deck.
     def test_deal_from_chance_deck(self):
         chance_deck = Deck.build_chance_deck()
-        active_player = Player('David')
+        active_player = Player('David', game=None)
         chance_deck.deal_from_deck(active_player)
         self.assertEqual(1700, active_player.liquid_holdings)
         active_player.liquid_holdings -= 200
@@ -32,7 +32,7 @@ class TestCards(unittest.TestCase):
     #nonconsumable cards, verify that the cards advance to the back of the deck when used, and that their associated actions are performed on a given Player object
     def test_deal_from_community_deck(self):
         community_deck = Deck.build_communbity_deck()
-        active_player = Player('Sara')
+        active_player = Player('Sara', game=None)
         community_deck.deal_from_deck(active_player)
         self.assertEqual(1700, active_player.liquid_holdings)
         self.assertEqual('Advance to Go', community_deck.cards[-1].face)
@@ -44,9 +44,14 @@ class TestCards(unittest.TestCase):
 
     #Verify that a card can be dealt, then consumed and restored to its respective deck
     def test_deal_single_consumable_card(self):
+        game = Monopoly()
+        game.add_player('David')
+        for i in range(6):
+            game.chance_deck.deal_from_deck(game.players[0])
+            print(f'Position: {game.players[0].position}, Assets: {game.players[0].liquid_holdings}')
+
+    def test_deal_multiple_consumable_cards(self):
         pass
-
-
 
     def test_use_consumable_card(self):
         pass
