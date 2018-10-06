@@ -11,7 +11,7 @@ def get_out_jail_free(player):
     player.position += HelperFunctions.roll_dice()
 
 def bank_error_in_your_favor(player):
-    player.liquid_holdings += 200
+    player.liquid_holdings += 250
 
 def from_sale_of_stock_50(player):
     player.liquid_holdings += 50

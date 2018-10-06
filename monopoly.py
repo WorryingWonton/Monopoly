@@ -12,8 +12,8 @@ class Monopoly:
         #players whose net holdings are zero are ignored (might also design to just remove them from the list)
         self.players = []
         self.board = Board().board
-        self.chance_deck = Deck().build_chance_deck()
-        self.community_deck = Deck().build_communbity_deck()
+        self.chance_deck = Deck.build_chance_deck()
+        self.community_deck = Deck.build_communbity_deck()
         self.turns = 0
 
     def add_player(self, name):
@@ -96,15 +96,15 @@ class Card:
         self.action = action
         self.holdable = holdable
         self.passes_go = passes_go
+        self.parent_deck = None
 
 
 @attr.s
 class Deck:
-    cards = attr.ib(default=[])
+    cards = attr.ib(factory=list)
 
     def shuffle_deck(self):
         random.shuffle(self.cards)
-
 
     #Cards are read from the top of each deck, and re-inserted at the bottom their action is performed
     def deal_from_deck(self, active_player):
@@ -141,6 +141,7 @@ class Deck:
                  Card(face='Your building loan matures', action=your_building_loan_matures, holdable=False, passes_go=False),
                  Card(face='You have won a crossword competition', action=you_have_won_a_crossword_competition, holdable=False, passes_go=False)]
         for card in cards: chance_deck.add_card(card)
+        return chance_deck
 
     @staticmethod
     def build_communbity_deck():
@@ -162,9 +163,7 @@ class Deck:
                   Card(face='You have won second prize in a beauty contest', action=you_have_won_second_prize_in_a_beauty_contest, holdable=False, passes_go=False),
                   Card(face='You inherit $100', action=you_inherit_100, holdable=False, passes_go=False)]
         for card in cards: community_deck.add_card(card)
-
-
-
+        return community_deck
 
 
 class Player:
