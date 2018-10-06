@@ -1,9 +1,10 @@
-import random
 from distutils.util import strtobool
 #This feels like I might be creating a circular dependency between these modules and monopoly, since these import from monopoly and monopoly imports from them
 from community_chest_functions import *
 from chance_deck_functions import *
 import attr
+import monopoly_helper_functions
+import random
 
 class Monopoly:
 
@@ -192,6 +193,11 @@ class Player:
                   gross_worth += structure[1]
         return gross_worth
 
+    def advance_position(self, amount):
+        if self.position + amount < 0:
+            self.position += 40
+        self.position = (self.position + amount) % 40
+
     #Returns a list containing property colors where a given player can build on
     #Should not be called on rail road or utility tiles
     @staticmethod
@@ -208,6 +214,7 @@ class Player:
 
                 buildable_list.append(color)
         return buildable_list
+
 
 
 
@@ -466,16 +473,7 @@ class Structure():
         self.rent = rent
 
 
-class HelperFunctions:
-    
-    @staticmethod
-    def roll_dice():
-        return (random.randint(1, 6), random.randint(1, 6))
 
-    @staticmethod
-    def afforadable(object, player):
-        if player.liquid_holdings >= object.price:
-            return True
 
 #TODO Refactor Tile classes to not prompt for user input. [Done]
     #turn sequencer should work as follows for determining buyability:  1.  Determine if property is present at the player's position.  2.  Determine if the property is affordable.  3.  Determine if the property is unowned

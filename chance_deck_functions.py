@@ -1,37 +1,33 @@
+from monopoly_helper_functions import HelperFunctions
+
 def advance_to_go(player):
     #What position is 'Go'?
     player.position = 0
     player.liquid_holdings += 200
 
 def advance_to_illinois_ave(player):
-    if player.position % 40 > 24:
+    if player.position == 24:
         player.liquid_holdings += 200
     player.position = 24
 
 def advance_to_st_charles_place(player):
-    if player.position % 40 > 11:
+    if player.position == 11:
         player.liquid_holdings += 200
     player.position = 11
 
 #Utilities at 12 and 28
 #Note if Card.face == 'Advance token to nearest Utility', do not call the if_owned() method on the utility tile in question
 def advance_to_nearest_utility(player):
-    if player.position % 40 > 28:
+    if player.position > 28:
         player.position = 12
-    if player.position % 40 > 12:
+    if player.position > 12:
         player.position = 28
     player.liquid_holdings -= 10 * sum(HelperFunctions.roll_dice())
 
-
+@property
 def advance_token_to_nearset_railroad(player, board):
-    if player.position % 40 < 5:
-        player.position = 5
-    elif player.position % 40 < 15:
-        player.position = 15
-    elif player.position % 40 < 25:
-        player.position = 25
-    elif player.position % 40 < 35:
-        player.position = 35
+    while not isinstance(board[player.position], RailRoadTile):
+        player.increment_position(1)
     working_tile = board[player.position]
     tile_owner = working_tile.find_owner()
     if tile_owner:
@@ -48,7 +44,7 @@ def get_out_jail_free(player):
     player.position += HelperFunctions.roll_dice()
 
 def go_back_3_spaces(player):
-    player.position -= 3
+    player.advance_position(-3)
 
 def go_to_jail(player):
     player.jailed = True
