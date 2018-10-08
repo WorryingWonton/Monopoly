@@ -45,6 +45,10 @@ class Monopoly:
             else:
                 self.chance_deck.append(card)
 
+    #Auto execute the correct initial action for each Tile object when landed upon, or when occupied by the active_player
+    def perform_tile_actions(self, active_player):
+        pass
+
 #The board object is a list of Tile objects
 class Board:
 
@@ -231,9 +235,15 @@ class Property:
         self.existing_structures = []
         self.mortgaged = False
 
+#tile_action(self) --- Performs the relevant actions for a tile when called.
+
 @attr.s
 class Tile:
     position = attr.ib(type=int)
+
+    #Default case for actions associated with the Tile
+    def tile_actions(self, active_player, players, dice_roll, dealt_card):
+        pass
 
 
 #Should be able to tell if the property on the Tile is on the market, how many like tiles the Owner of the landed on tile has, determine if the Tile can be sold (I think this may be unique to color tiles)
@@ -290,6 +300,8 @@ class OwnableTile(Tile):
         else:
             raise Exception(f'{self.property.name} is not owned by {player.name}')
 
+
+
 @attr.s
 class UnownableTile(Tile):
     pass
@@ -297,16 +309,28 @@ class UnownableTile(Tile):
 
 @attr.s
 class RailRoadTile(OwnableTile):
+    def tile_actions(self, active_player, players, dice_roll, dealt_card):
+       owner = self.find_owner(players)
+       if owner:
+            if owner == active_player:
+                pass
+            elif dealt_card.action == advance_token_to_nearset_railroad:
+                self.if_owned(active_player, owner, dice_roll, dealt_card)
+       else:
+           pass
 
-    def if_owned(self, player, owner, dice_roll=None):
+    def if_owned(self, player, owner, dice_roll=None, dealt_card = None):
         num_owned_railroads = self.count_similar_owned_properties(owner)
         #If the current tile has a trainstation on it
+        multiplier = 1
+        if dealt_card:
+            multiplier = 2
         if self.property.existing_structures[0].type == 'trainstation':
-            player.liquid_holdings -= self.property.base_rent * 4**(num_owned_railroads - 1)
-            owner.liquid_holdings += self.property.base_rent * 4**(num_owned_railroads - 1)
+            player.liquid_holdings -= multiplier * self.property.base_rent * 4**(num_owned_railroads - 1)
+            owner.liquid_holdings += multiplier * self.property.base_rent * 4**(num_owned_railroads - 1)
         else:
-            player.liquid_holdings -= self.property.base_rent * 2**(num_owned_railroads - 1)
-            owner.liquid_holdings += self.property.base_rent * 2**(num_owned_railroads - 1)
+            player.liquid_holdings -= multiplier * self.property.base_rent * 2**(num_owned_railroads - 1)
+            owner.liquid_holdings += multiplier * self.property.base_rent * 2**(num_owned_railroads - 1)
 
     def build_train_station(self, player):
         if player.liquid_holdings >= self.property.possible_structures[0].price:

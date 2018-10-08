@@ -10,3 +10,4 @@ class HelperFunctions:
     def afforadable(object, player):
         if player.liquid_holdings >= object.price:
             return True
+
