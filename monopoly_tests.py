@@ -16,6 +16,18 @@ class TestPlayerInitialization(unittest.TestCase):
         game.add_player('Dave')
         self.assertEqual('Dave', game.players[0].name)
 
+    def test_active_player_cycling(self):
+        game = Monopoly()
+        game.add_player('Sara')
+        game.add_player('Bill')
+        self.assertEqual('Sara', game.active_player.name)
+        game.advance_turn()
+        self.assertEqual('Bill', game.active_player.name)
+        game.advance_turn()
+        self.assertEqual('Sara', game.active_player.name)
+
+
+
 
 class TestCards(unittest.TestCase):
     #If a card is holdable, and the active_player opts to hold the card, then the card will be removed from the deck, and added to the active_player's hand
@@ -55,6 +67,14 @@ class TestCards(unittest.TestCase):
 
     def test_use_consumable_card(self):
         pass
+
+class TestPlayerOptions(unittest.TestCase):
+    def test_railroad_tile_options(self):
+        game = Monopoly()
+        game.add_player('David')
+        game.players[0].position = 5
+        self.assertEqual(['Buy', 'Mortgage', 'Pass/Send to Auction'], game.board[5].tile_actions(active_player=game.players[0], players=game.players, dealt_card=None))
+
 
 class TestKeyObjects(unittest.TestCase):
 

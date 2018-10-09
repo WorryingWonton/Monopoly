@@ -27,9 +27,11 @@ class Monopoly:
                 self.players.remove(player)
 
     def advance_turn(self):
-        active_player = self.players[self.turns % len(self.players)]
         self.turns += 1
-        return active_player
+
+    @property
+    def active_player(self):
+        return self.players[self.turns % len(self.players)]
 
     def consume_held_card(self, active_player, card_face, card_deck):
         cards = list(filter(lambda card: card.face == card_face.lower() and card.parent_deck == card_deck.lower(), active_player.hand))
@@ -48,6 +50,29 @@ class Monopoly:
     #Auto execute the correct initial action for each Tile object when landed upon, or when occupied by the active_player
     def perform_tile_actions(self, active_player):
         pass
+
+    def run_turn(self):
+        dice_roll = HelperFunctions.roll_dice()
+        option_list = self.board[self.active_player.position].tile_actions(self.active_player, self.players, dice_roll)
+        #active_player_decision = interface.get_decision(option_list)
+        #self.execute_player_decision(active_player_decision)
+        pass
+
+    def execute_player_decision(self, active_player_decision):
+        pass
+
+
+
+    #Requries that all players that are going to participate have been added
+        #Runs until someone wins, more precisely that the number of players is wittled down to one.
+        #Returns the last remaining player
+    def run_game(self):
+        while len(self.players) > 1:
+            self.run_turn()
+            self.eject_bankrupt_players()
+            self.advance_turn()
+        return self.players[0]
+
 
 #The board object is a list of Tile objects
 class Board:
@@ -241,8 +266,10 @@ class Property:
 class Tile:
     position = attr.ib(type=int)
 
-    #Default case for actions associated with the Tile
-    def tile_actions(self, active_player, players, dice_roll, dealt_card):
+    #Performs all appropriate actions associated with the Tile object in play
+        #Assumes active_player is on the Tile
+
+    def tile_actions(self, active_player, players, dice_roll):
         pass
 
 
@@ -313,11 +340,11 @@ class RailRoadTile(OwnableTile):
        owner = self.find_owner(players)
        if owner:
             if owner == active_player:
-                pass
+                return True
             elif dealt_card.action == advance_token_to_nearset_railroad:
                 self.if_owned(active_player, owner, dice_roll, dealt_card)
        else:
-           pass
+           return False
 
     def if_owned(self, player, owner, dice_roll=None, dealt_card = None):
         num_owned_railroads = self.count_similar_owned_properties(owner)
