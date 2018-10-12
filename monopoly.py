@@ -33,23 +33,13 @@ class Monopoly:
     def active_player(self):
         return self.players[self.turns % len(self.players)]
 
-    def consume_held_card(self, active_player, card_face, card_deck):
-        cards = list(filter(lambda card: card.face == card_face.lower() and card.parent_deck == card_deck.lower(), active_player.hand))
-        if len(cards) > 1:
-            raise Exception(f'Duplicate cards in deck, there are {len(cards)} instances of {cards[0].face} belonging to the {cards[0].parent_deck} deck')
-        elif len(cards) == 0:
-            raise Exception(f'{card_face} beloning to the {card_deck} deck was not found in {active_player.name}\'s hand')
-        else:
-            card = cards[0]
-            card.action(active_player)
-            if card.parent_deck == 'community':
-                self.community_deck.append(card)
-            else:
-                self.chance_deck.append(card)
+
 
     #Auto execute the correct initial action for each Tile object when landed upon, or when occupied by the active_player
+        #Returns a list of possible actions the player can perform
     def perform_tile_actions(self, active_player):
-        pass
+        option_list = []
+        return option_list
 
     def run_turn(self):
         dice_roll = HelperFunctions.roll_dice()
@@ -247,6 +237,20 @@ class Player:
 
     def get_tile_at_player_position(self):
         return self.game.board[self.position]
+
+    def consume_held_card(self, card_face, card_deck):
+        cards = list(filter(lambda card: card.face == card_face.lower() and card.parent_deck == card_deck.lower(), self.game.active_player.hand))
+        if len(cards) > 1:
+            raise Exception(f'Duplicate cards in deck, there are {len(cards)} instances of {cards[0].face} belonging to the {cards[0].parent_deck} deck')
+        elif len(cards) == 0:
+            raise Exception(f'{card_face} beloning to the {card_deck} deck was not found in {self.game.active_player.name}\'s hand')
+        else:
+            card = cards[0]
+            card.action(self.game.active_player)
+            if card.parent_deck == 'community':
+                self.community_deck.append(card)
+            else:
+                self.chance_deck.append(card)
 
 class Property:
 
