@@ -26,6 +26,10 @@ class TestPlayerInitialization(unittest.TestCase):
         game.advance_turn()
         self.assertEqual('Sara', game.active_player.name)
 
+class TestTurnHandling(unittest.TestCase):
+    pass
+
+
 
 
 
@@ -76,7 +80,7 @@ class TestPlayerOptions(unittest.TestCase):
         self.assertEqual(['Buy', 'Mortgage', 'Pass/Send to Auction'], game.board[5].tile_actions(active_player=game.players[0], players=game.players, dealt_card=None))
 
 
-class TestKeyObjects(unittest.TestCase):
+class TestAncillaryMethods(unittest.TestCase):
 
     def test_deal_from_deck(self):
         pass

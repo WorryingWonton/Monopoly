@@ -33,14 +33,6 @@ class Monopoly:
     def active_player(self):
         return self.players[self.turns % len(self.players)]
 
-
-
-    #Auto execute the correct initial action for each Tile object when landed upon, or when occupied by the active_player
-        #Returns a list of possible actions the player can perform
-    def perform_tile_actions(self, active_player):
-        option_list = []
-        return option_list
-
     def run_turn(self):
         dice_roll = HelperFunctions.roll_dice()
         option_list = self.board[self.active_player.position].tile_actions(self.active_player, self.players, dice_roll)
@@ -48,6 +40,7 @@ class Monopoly:
         #self.execute_player_decision(active_player_decision)
         pass
 
+    #active_player_decision
     def execute_player_decision(self, active_player_decision):
         pass
 
@@ -200,6 +193,7 @@ class Player:
         self.jailed = False
         self.hand = []
         self.game = game
+        self.dealt_card = None
 
     def find_gross_worth(self):
         gross_worth = self.liquid_holdings
@@ -239,18 +233,18 @@ class Player:
         return self.game.board[self.position]
 
     def consume_held_card(self, card_face, card_deck):
-        cards = list(filter(lambda card: card.face == card_face.lower() and card.parent_deck == card_deck.lower(), self.game.active_player.hand))
+        cards = list(filter(lambda card: card.face == card_face.lower() and card.parent_deck == card_deck.lower(), self.hand))
         if len(cards) > 1:
             raise Exception(f'Duplicate cards in deck, there are {len(cards)} instances of {cards[0].face} belonging to the {cards[0].parent_deck} deck')
         elif len(cards) == 0:
             raise Exception(f'{card_face} beloning to the {card_deck} deck was not found in {self.game.active_player.name}\'s hand')
         else:
             card = cards[0]
-            card.action(self.game.active_player)
+            card.action(self)
             if card.parent_deck == 'community':
-                self.community_deck.append(card)
+                self.game.community_deck.append(card)
             else:
-                self.chance_deck.append(card)
+                self.game.chance_deck.append(card)
 
 class Property:
 
@@ -293,18 +287,29 @@ class OwnableTile(Tile):
     def if_owned(self, player, owner, dice_roll):
         pass
 
-    def if_not_owned(self, player, buy_decision):
-        if player.liquid_holdings >= self.property.price:
-            # buy_decision = strtobool(input(f'{self.property.name} is available.  \nYou can buy it for {self.property.price} or mortage it for {self.property.mortgage_price}\n Enter \'Buy\' \'Mortgage\' or \'Pass\'').lower())
-            if buy_decision == 'buy':
-                player.property_holdings.append(self)
-                player.liquid_holdings -= self.property.price
-            elif buy_decision == 'mortgage':
-                player.liquid_holdings -= self.property.mortgage_price
-                self.property.mortgaged = True
-                player.property_holdings.append(self)
-            else:
-                return None
+    #The purpose of if_not_owned is to return whether or not the active_player can afford to buy the property of the ownable tile they've landed on
+        #It returns True if the player can afford to buy the Tile outright, and False if they cannot.
+        #tile_actions() will not include buying the property if the active_player cannot afford it
+    def if_not_owned(self, active_player):
+        buy_mortgage_option_list = []
+        if self.property.price <= active_player.liquid_holdings:
+            buy_mortgage_option_list.append(self.buy_property)
+        if self.property.mortgage_price <= active_player.liquid_holdings:
+            buy_mortgage_option_list.append(self.mortgage_property)
+        return buy_mortgage_option_list
+
+    def buy_property(self, active_player):
+        active_player.liquid_holdings -= self.property.price
+        active_player.property_holdings.append(self)
+
+    def mortgage_property(self, active_player):
+        active_player.liquid_holdings -= self.property.mortgage_price
+        active_player.property_holdings.append(self)
+        self.property.mortgaged = True
+
+    def enact_auction_outcome(self, winning_player):
+        pass
+
 
     #Below method finds out how many similar properties an owner has
     def count_similar_owned_properties(self, owner):
@@ -338,17 +343,22 @@ class UnownableTile(Tile):
     pass
 
 
+
+#tile_actions() needs to determine the Tile's state, perform automatic actions on the active_player as a function of that state, and return a list of options the player can choose from
 @attr.s
 class RailRoadTile(OwnableTile):
-    def tile_actions(self, active_player, players, dice_roll, dealt_card):
-       owner = self.find_owner(players)
-       if owner:
+
+    def tile_ations(self, active_player, players, dice_roll):
+        #Find the owner of the Tile
+        owner = self.find_owner(players)
+        if owner:
             if owner == active_player:
-                return True
-            elif dealt_card.action == advance_token_to_nearset_railroad:
-                self.if_owned(active_player, owner, dice_roll, dealt_card)
-       else:
-           return False
+                pass
+            elif active_player.dealt_card.actions == advance_token_to_nearset_railroad:
+                self.if_owned(active_player, owner, dice_roll, active_player.dealt_card)
+            return []
+        else:
+            return [self.if_not_owned]
 
     def if_owned(self, player, owner, dice_roll=None, dealt_card = None):
         num_owned_railroads = self.count_similar_owned_properties(owner)
