@@ -1,9 +1,8 @@
 from distutils.util import strtobool
-#This feels like I might be creating a circular dependency between these modules and monopoly, since these import from monopoly and monopoly imports from them
 from community_chest_functions import *
 from chance_deck_functions import *
 import attr
-import monopoly_helper_functions
+import monopoly_cl_interface
 import random
 
 class Monopoly:
@@ -35,16 +34,19 @@ class Monopoly:
 
     def run_turn(self):
         dice_roll = HelperFunctions.roll_dice()
+        if not self.active_player.jailed:
+            self.active_player.position += dice_roll
         option_list = self.board[self.active_player.position].tile_actions(self.active_player, self.players, dice_roll)
-        #active_player_decision = interface.get_decision(option_list)
-        #self.execute_player_decision(active_player_decision)
-        pass
+        active_player_decision = monopoly_cl_interface.CLInterface(game=self).get_decision(option_list)
+        self.execute_player_decision(active_player_decision)
+
 
     #active_player_decision
+        #Need to implement common interface amongst executvie methods:
+            #Executive methods return None
+
     def execute_player_decision(self, active_player_decision):
-        pass
-
-
+        active_player_decision(self.active_player)
 
     #Requries that all players that are going to participate have been added
         #Runs until someone wins, more precisely that the number of players is wittled down to one.
@@ -66,7 +68,7 @@ class Board:
                       CardTile(position=2),
                       ColorTile(position=3, color='brown', property=Property(name='Baltic Avenue', price=60, mortgage_price=30, possible_structures=[Structure('house', 50, 20), Structure('house', 50, 60), Structure('house', 50, 180), Structure('house', 50, 320), Structure('hotel', 50, 450)], base_rent=4)),
                       IncomeTaxTile(position=4),
-                      RailRoadTile(position=5, property=Property(name='Reading Railroad', price=200, mortgage_price=100 , possible_structures=Structure('trainstation', 100, 50), base_rent=25)),
+                      RailRoadTile(position=5, property=Property(name='Reading Railroad', price=200, mortgage_price=100 , possible_structures=[Structure('trainstation', 100, 50)], base_rent=25)),
                       ColorTile(position=6, color='cyan', property=Property(name='Oriental Avenue', price=100, mortgage_price=50, possible_structures=[Structure('house', 50, 30), Structure('house', 50, 90), Structure('house', 50, 270), Structure('house', 50, 400), Structure('hotel', 50, 550)], base_rent=6)),
                       CardTile(position=7),
                       ColorTile(position=8, color='cyan', property=Property(name='Vermont Avenue', price=100, mortgage_price=50, possible_structures=[Structure('house', 50, 30), Structure('house', 50, 90), Structure('house', 50, 270), Structure('house', 50, 400), Structure('hotel', 50, 550)], base_rent=6)),
@@ -76,7 +78,7 @@ class Board:
                       UtilityTile(position=12, property=Property(name='Electric Company', price=150, mortgage_price=75, possible_structures=None, base_rent=None)),
                       ColorTile(position=13, color='pink', property=Property(name='States Avenue', price=140, mortgage_price=70, possible_structures=[Structure('house', 100, 50), Structure('house', 100, 150), Structure('house', 100, 450), Structure('house', 100, 625), Structure('hotel', 100, 750)], base_rent=10)),
                       ColorTile(position=14, color='pink', property=Property(name='Virginia Avenue', price=160, mortgage_price=80, possible_structures=[Structure('house', 100, 60), Structure('house', 100, 180), Structure('house', 100, 500), Structure('house', 100, 700), Structure('hotel', 100, 900)], base_rent=12)),
-                      RailRoadTile(position=15, property=Property(name='Pennsylvania Railroad', price=200, mortgage_price=100 , possible_structures=Structure('trainstation', 100, 50), base_rent=25)),
+                      RailRoadTile(position=15, property=Property(name='Pennsylvania Railroad', price=200, mortgage_price=100 , possible_structures=[Structure('trainstation', 100, 50)], base_rent=25)),
                       ColorTile(position=16, color='orange', property=Property(name='St. James Place', price=180, mortgage_price=90, possible_structures=[Structure('house', 100, 70), Structure('house', 100, 200), Structure('house', 100, 550), Structure('house', 100, 750), Structure('hotel', 100, 950)], base_rent=14)),
                       CardTile(position=17),
                       ColorTile(position=18, color='orange', property=Property(name='Tennessee Avenue', price=180, mortgage_price=90, possible_structures=[Structure('house', 100, 70), Structure('house', 100, 200), Structure('house', 100, 550), Structure('house', 100, 750), Structure('hotel', 100, 950)], base_rent=14)),
@@ -86,7 +88,7 @@ class Board:
                       CardTile(position=22),
                       ColorTile(position=23, color='red', property=Property(name='Indiana Avenue', price=220, mortgage_price=110, possible_structures=[Structure('house', 150, 90), Structure('house', 150, 250), Structure('house', 150, 700), Structure('house', 150, 875), Structure('hotel', 150, 1050)], base_rent=18)),
                       ColorTile(position=24, color='red', property=Property(name='Illinois Avenue', price=240, mortgage_price=120, possible_structures=[Structure('house', 150, 100), Structure('house', 150, 300), Structure('house', 150, 750), Structure('house', 150, 925), Structure('hotel', 150, 1100)], base_rent=20)),
-                      RailRoadTile(position=25, property=Property(name='B. & O. Railroad', price=200, mortgage_price=100 , possible_structures=Structure('trainstation', 100, 50), base_rent=25)),
+                      RailRoadTile(position=25, property=Property(name='B. & O. Railroad', price=200, mortgage_price=100 , possible_structures=[Structure('trainstation', 100, 50)], base_rent=25)),
                       ColorTile(position=26, color='yellow', property=Property(name='Atlantic Avenue', price=260, mortgage_price=130, possible_structures=[Structure('house', 150, 110), Structure('house', 150, 330), Structure('house', 150, 800), Structure('house', 150, 975), Structure('hotel', 150, 1150)], base_rent=22)),
                       ColorTile(position=27, color='yellow', property=Property(name='Ventnor Avenue', price=260, mortgage_price=130, possible_structures=[Structure('house', 150, 110), Structure('house', 150, 330), Structure('house', 150, 800), Structure('house', 150, 975), Structure('hotel', 150, 1150)], base_rent=22)),
                       UtilityTile(position=28, property=Property(name='Water Works', price=150, mortgage_price=75, possible_structures=None, base_rent=None)),
@@ -96,7 +98,7 @@ class Board:
                       ColorTile(position=32, color='green', property=Property(name='North Carolina Avenue', price=300, mortgage_price=150, possible_structures=[Structure('house', 200, 130), Structure('house', 200, 390), Structure('house', 200, 900), Structure('house', 200, 1100), Structure('hotel', 150, 1275)], base_rent=26)),
                       CardTile(position=33),
                       ColorTile(position=34, color='green', property=Property(name='Pennsylvania Avenue', price=320, mortgage_price=150, possible_structures=[Structure('house', 200, 150), Structure('house', 200, 450), Structure('house', 200, 1000), Structure('house', 200, 1200), Structure('hotel', 200, 1400)], base_rent=28)),
-                      RailRoadTile(position=35, property=Property(name='Short Line', price=200, mortgage_price=100 , possible_structures=Structure('trainstation', 100, 50), base_rent=25)),
+                      RailRoadTile(position=35, property=Property(name='Short Line', price=200, mortgage_price=100 , possible_structures=[Structure('trainstation', 100, 50)], base_rent=25)),
                       CardTile(position=36),
                       ColorTile(position=37, color='blue', property=Property(name='Park Place', price=350, mortgage_price=175, possible_structures=[Structure('house', 200, 175), Structure('house', 200, 500), Structure('house', 200, 1100), Structure('house', 200, 1300), Structure('hotel', 200, 1500)], base_rent=35)),
                       LuxuryTaxTile(position=38),
@@ -293,9 +295,9 @@ class OwnableTile(Tile):
     def if_not_owned(self, active_player):
         buy_mortgage_option_list = []
         if self.property.price <= active_player.liquid_holdings:
-            buy_mortgage_option_list.append(self.buy_property)
+            buy_mortgage_option_list.append(('Buy Railroad', self.buy_property))
         if self.property.mortgage_price <= active_player.liquid_holdings:
-            buy_mortgage_option_list.append(self.mortgage_property)
+            buy_mortgage_option_list.append(('Mortgage RailRoad', self.mortgage_property))
         return buy_mortgage_option_list
 
     def buy_property(self, active_player):
@@ -307,9 +309,9 @@ class OwnableTile(Tile):
         active_player.property_holdings.append(self)
         self.property.mortgaged = True
 
-    def enact_auction_outcome(self, winning_player):
-        pass
-
+    def enact_auction_outcome(self, winning_player, winning_bid):
+        winning_player.liquid_holdings -= winning_bid
+        winning_player.property_holdings.append(self)
 
     #Below method finds out how many similar properties an owner has
     def count_similar_owned_properties(self, owner):
@@ -318,7 +320,6 @@ class OwnableTile(Tile):
             if isinstance(self, tile):
                 num_tiles += 1
         return num_tiles
-
 
     def determine_if_sellable(self, player):
         if self in player.property_holdings:
@@ -348,29 +349,33 @@ class UnownableTile(Tile):
 @attr.s
 class RailRoadTile(OwnableTile):
 
-    def tile_ations(self, active_player, players, dice_roll):
+    def tile_actions(self, active_player, players, dice_roll):
         #Find the owner of the Tile
         owner = self.find_owner(players)
         if owner:
             if owner == active_player:
-                pass
+                if active_player.liquid_holdings >= self.property.possible_structures[0].price:
+                    return ('Build Trainsation', self.build_train_station)
+                else:
+                    return ()
             elif active_player.dealt_card.actions == advance_token_to_nearset_railroad:
-                self.if_owned(active_player, owner, dice_roll, active_player.dealt_card)
-            return []
+                self.if_owned(active_player, owner, dice_roll)
+            return ()
         else:
-            return [self.if_not_owned]
+            return self.if_not_owned(active_player)
 
-    def if_owned(self, player, owner, dice_roll=None, dealt_card = None):
+    #Refactor
+    def if_owned(self, active_player, owner, dice_roll=None):
         num_owned_railroads = self.count_similar_owned_properties(owner)
         #If the current tile has a trainstation on it
         multiplier = 1
-        if dealt_card:
+        if active_player.dealt_card:
             multiplier = 2
         if self.property.existing_structures[0].type == 'trainstation':
-            player.liquid_holdings -= multiplier * self.property.base_rent * 4**(num_owned_railroads - 1)
+            active_player.liquid_holdings -= multiplier * self.property.base_rent * 4**(num_owned_railroads - 1)
             owner.liquid_holdings += multiplier * self.property.base_rent * 4**(num_owned_railroads - 1)
         else:
-            player.liquid_holdings -= multiplier * self.property.base_rent * 2**(num_owned_railroads - 1)
+            active_player.liquid_holdings -= multiplier * self.property.base_rent * 2**(num_owned_railroads - 1)
             owner.liquid_holdings += multiplier * self.property.base_rent * 2**(num_owned_railroads - 1)
 
     def build_train_station(self, player):
@@ -469,7 +474,6 @@ class ColorTile(OwnableTile):
 
     #If possible, returns the next buildable structure object from the Tile's list of possible structure
     #add_or_remove = boolean for if the method is being called to add or remove a structure
-    #Turns out adding the ability to remove structures following the build even rule took more than two lines of code, but still a simple change
     def build_evenly(self, player, add_structure):
         if len(self.property.existing_structures) == 0:
             if add_structure:

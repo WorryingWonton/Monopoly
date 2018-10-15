@@ -1,5 +1,6 @@
 import unittest
 from monopoly import *
+from monopoly_cl_interface import *
 
 class TestMonopolyInitialization(unittest.TestCase):
     def test_game_initialization(self):
@@ -72,12 +73,12 @@ class TestCards(unittest.TestCase):
     def test_use_consumable_card(self):
         pass
 
-class TestPlayerOptions(unittest.TestCase):
-    def test_railroad_tile_options(self):
-        game = Monopoly()
-        game.add_player('David')
-        game.players[0].position = 5
-        self.assertEqual(['Buy', 'Mortgage', 'Pass/Send to Auction'], game.board[5].tile_actions(active_player=game.players[0], players=game.players, dealt_card=None))
+# class TestPlayerOptions(unittest.TestCase):
+#     def test_railroad_tile_options(self):
+#         game = Monopoly()
+#         game.add_player('David')
+#         game.players[0].position = 5
+#         self.assertEqual(['Buy', 'Mortgage', 'Pass/Send to Auction'], game.board[5].tile_actions(active_player=game.players[0], players=game.players, dealt_card=None))
 
 
 class TestAncillaryMethods(unittest.TestCase):
@@ -93,6 +94,48 @@ class TestAncillaryMethods(unittest.TestCase):
 
     def test_dice_roll(self):
         pass
+
+
+class TestSingleTurn(unittest.TestCase):
+    def test_railroad_tile_option_list(self):
+        game_instance = Monopoly()
+        game_instance.add_player('David')
+        game_instance.add_player('Sara')
+        game_instance.players[0].position = 5
+        option_list = game_instance.board[game_instance.active_player.position].tile_actions(game_instance.active_player, game_instance.players, None)
+        self.assertEqual('Buy Railroad', option_list[0][0])
+        self.assertEqual('Mortgage RailRoad', option_list[1][0])
+
+    def test_railroad_tile(self):
+        game_instance = Monopoly()
+        game_instance.add_player('David')
+        game_instance.add_player('Sallie')
+        #Move David to the RailRoad tile
+        game_instance.players[0].position = 5
+        #Monopoly.run_turn() will not be used for this test, as it moves the player forward by the outcome of the dice roll each time it's called.
+        option_list = game_instance.board[game_instance.active_player.position].tile_actions(game_instance.active_player, game_instance.players, None)
+        # self.assertEqual('Buy Railroad', monopoly_cl_interface.CLInterface(game=game_instance).get_decision(option_list))
+        #Note that running this line requires user input.  Choose the option to buy the railroad.
+        game_instance.execute_player_decision(monopoly_cl_interface.CLInterface(game=game_instance).get_decision(option_list))
+        self.assertEqual(True, isinstance(game_instance.active_player.property_holdings[0], RailRoadTile))
+        game_instance.advance_turn()
+        self.assertEqual('Sallie', game_instance.active_player.name)
+        game_instance.active_player.position = 5
+        game_instance.advance_turn()
+        option_list_turn_3 = game_instance.board[game_instance.active_player.position].tile_actions(game_instance.active_player, game_instance.players, None)
+        game_instance.execute_player_decision(monopoly_cl_interface.CLInterface(game=game_instance).get_decision(option_list_turn_3))
+        self.assertEqual('trainstation', game_instance.board[5].property.existing_structures.type)
+
+
+
+
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     unittest.main()
