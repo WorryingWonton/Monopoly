@@ -37,11 +37,13 @@ class Monopoly:
         # dice_roll = HelperFunctions.roll_dice()
         # if not self.active_player.jailed:
         #     self.active_player.position += dice_roll
+        print(f'{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name}')
+        dice_roll = 0
         if self.turns < 2:
-            dice_roll = 5
+            dice_roll += 5
         else:
-            dice_roll = 10
-        self.active_player.position += dice_roll
+            dice_roll += 10
+        self.active_player.advance_position(dice_roll)
         option_list = self.board[self.active_player.position].tile_actions(self.active_player, self.players, dice_roll)
         for tile in self.active_player.property_holdings:
             if tile.position == self.active_player.position:
@@ -52,6 +54,7 @@ class Monopoly:
         if len(option_list) > 0:
             active_player_decision = monopoly_cl_interface.CLInterface(game=self).get_decision(option_list)
             self.execute_player_decision(active_player_decision)
+
 
 
     #active_player_decision
@@ -219,7 +222,7 @@ class Player:
                 gross_worth += tile.property.price
             if len(tile.property.existing_structures) > 0:
                 for structure in tile.property.existing_structures:
-                  gross_worth += structure[1]
+                  gross_worth += structure.price/2
         return gross_worth
 
     def advance_position(self, amount):

@@ -17,6 +17,7 @@ class CLInterface():
         for option in option_list:
             option_string += f'\n{line_count}: {option[0]}'
             line_count += 1
+
         return option_string
 
 

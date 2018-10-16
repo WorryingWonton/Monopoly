@@ -118,8 +118,9 @@ class TestSingleTurn(unittest.TestCase):
         game_instance = Monopoly()
         game_instance.add_player('David')
         game_instance.add_player('Sallie')
-        game_instance.run_game()
-        
+        result = game_instance.run_game()
+        print(result)
+
 
 
 
