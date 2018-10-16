@@ -276,6 +276,12 @@ class Property:
         self.existing_structures = []
         self.mortgaged = False
 
+class Structure:
+    def __init__(self, type, price, rent):
+        self.type = type
+        self.price = price
+        self.rent = rent
+
 #tile_action(self) --- Performs the relevant actions for a tile when called.
 
 @attr.s
@@ -340,25 +346,22 @@ class OwnableTile(Tile):
     def determine_if_sellable(self, player):
         if self in player.property_holdings:
             if len(self.property.existing_structures) > 0:
-                return False
+                return []
             else:
-                return True
+                return [(f'Sell {self.property.name}', self.sell_property)]
         else:
-            return False
+            return []
 
-    def sell_property(self, player):
-        if self in player.property_holdings:
-            player.property_holdings.remove(self)
-            player.liquid_holdings += self.property.price
-        else:
-            raise Exception(f'{self.property.name} is not owned by {player.name}')
-
+    def sell_property(self, active_player, buyer, amount):
+        active_player.property_holdings.remove(self)
+        buyer.property_holdings.append(self)
+        active_player.liquid_holdings += amount
+        buyer.liquid_holdings -= amount
 
 
 @attr.s
 class UnownableTile(Tile):
     pass
-
 
 
 #tile_actions() needs to determine the Tile's state, perform automatic actions on the active_player as a function of that state, and return a list of options the player can choose from
@@ -376,10 +379,12 @@ class RailRoadTile(OwnableTile):
     def if_owned(self, active_player, owner, dice_roll=None):
         num_owned_railroads = self.count_similar_owned_properties(owner)
         if active_player == owner:
-            if len(self.property.existing_structures) == 0 and active_player.liquid_holdings >= self.property.possible_structures[0].price:
-                return [(f'Build Transtation at position {self.position}', self.build_train_station)]
-            else:
-                return []
+            sellability = self.determine_if_sellable(active_player)
+            if sellability:
+                if active_player.liquid_holdings >= self.property.possible_structures[0].price:
+                    return sellability + [(f'Build Transtation at {self.property.name}', self.build_train_station)]
+                else:
+                    return sellability
         else:
             multiplier = 1
             if active_player.dealt_card:
@@ -549,11 +554,7 @@ class FreeParking(Tile):
     pass
 
 
-class Structure():
-    def __init__(self, type, price, rent):
-        self.type = type
-        self.price = price
-        self.rent = rent
+
 
 
 

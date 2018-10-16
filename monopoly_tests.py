@@ -119,8 +119,7 @@ class TestSingleTurn(unittest.TestCase):
         game_instance.add_player('David')
         game_instance.add_player('Sallie')
         result = game_instance.run_game()
-        print(result)
-
+        self.assertEqual('David', result.name)
 
 
 
