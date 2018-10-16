@@ -5,8 +5,11 @@ class CLInterface():
         self.game = game
 
     def get_decision(self, option_list):
-        selection = input(f'Your options are: {self.ml_printer(option_list)}\nWhat would you like to do {self.game.active_player.name}?\nType a number from the list and press Enter:  ')
-        return option_list[int(selection) - 1][1]
+        #if statement is part of test code, comment out when running outside of unit tests
+        if len(option_list) > 0:
+            selection = input(f'Your options are: {self.ml_printer(option_list)}\nWhat would you like to do {self.game.active_player.name}?\nType a number from the list and press Enter:  ')
+            return option_list[int(selection) - 1][1]
+
 
     def ml_printer(self, option_list):
         option_string = ''

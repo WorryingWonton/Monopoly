@@ -33,20 +33,33 @@ class Monopoly:
         return self.players[self.turns % len(self.players)]
 
     def run_turn(self):
-        dice_roll = HelperFunctions.roll_dice()
-        if not self.active_player.jailed:
-            self.active_player.position += dice_roll
+        #Commented for unit tests
+        # dice_roll = HelperFunctions.roll_dice()
+        # if not self.active_player.jailed:
+        #     self.active_player.position += dice_roll
+        if self.turns < 2:
+            dice_roll = 5
+        else:
+            dice_roll = 10
+        self.active_player.position += dice_roll
         option_list = self.board[self.active_player.position].tile_actions(self.active_player, self.players, dice_roll)
-        active_player_decision = monopoly_cl_interface.CLInterface(game=self).get_decision(option_list)
-        self.execute_player_decision(active_player_decision)
+        for tile in self.active_player.property_holdings:
+            if tile.position == self.active_player.position:
+                pass
+            options = tile.tile_actions(self.active_player, self.players, dice_roll)
+            for option in options:
+                option_list.append(option)
+        if len(option_list) > 0:
+            active_player_decision = monopoly_cl_interface.CLInterface(game=self).get_decision(option_list)
+            self.execute_player_decision(active_player_decision)
 
 
     #active_player_decision
         #Need to implement common interface amongst executvie methods:
             #Executive methods return None
-
     def execute_player_decision(self, active_player_decision):
-        active_player_decision(self.active_player)
+        if active_player_decision:
+            active_player_decision(self.active_player)
 
     #Requries that all players that are going to participate have been added
         #Runs until someone wins, more precisely that the number of players is wittled down to one.
@@ -142,8 +155,8 @@ class Deck:
         cards = [Card(face='Advance to Go', action=advance_to_go, holdable=False, passes_go=False),
                  Card(face='Advance to Illinois Ave.', action=advance_to_illinois_ave, holdable=False, passes_go=True),
                  Card(face='Advance to St. Charles Place', action=advance_to_st_charles_place, holdable=False, passes_go=True),
-                 Card(face='Advance toklen to nearest Utility', action=advance_to_nearest_utility, holdable=False, passes_go=False),
-                 Card(face='Advance token to the nearest Railraod', action=advance_token_to_nearset_railroad, holdable=False, passes_go=False),
+                 Card(face='Advance token to nearest Utility', action=advance_to_nearest_utility, holdable=False, passes_go=False),
+                 Card(face='Advance token to the nearest Railroad', action=advance_token_to_nearset_railroad, holdable=False, passes_go=False),
                  Card(face='Bank pays you dividend of $50', action=bank_pays_you_50_dividend, holdable=False, passes_go=False),
                  Card(face='Get out of Jail Free', action=get_out_jail_free, holdable=True, passes_go=False),
                  Card(face='Go back 3 Spaces', action=go_back_3_spaces, holdable=False, passes_go=False),
@@ -199,13 +212,13 @@ class Player:
 
     def find_gross_worth(self):
         gross_worth = self.liquid_holdings
-        for property in self.property_holdings:
-            if property.mortgaged:
-                gross_worth += property.mortgage_price
+        for tile in self.property_holdings:
+            if tile.property.mortgaged:
+                gross_worth += tile.property.mortgage_price
             else:
-                gross_worth += property.price
-            if len(property.existing_structures) > 0:
-                for structure in property.existing_structures:
+                gross_worth += tile.property.price
+            if len(tile.property.existing_structures) > 0:
+                for structure in tile.property.existing_structures:
                   gross_worth += structure[1]
         return gross_worth
 
@@ -295,9 +308,9 @@ class OwnableTile(Tile):
     def if_not_owned(self, active_player):
         buy_mortgage_option_list = []
         if self.property.price <= active_player.liquid_holdings:
-            buy_mortgage_option_list.append(('Buy Railroad', self.buy_property))
+            buy_mortgage_option_list.append((f'Buy Railroad at position {self.position}', self.buy_property))
         if self.property.mortgage_price <= active_player.liquid_holdings:
-            buy_mortgage_option_list.append(('Mortgage RailRoad', self.mortgage_property))
+            buy_mortgage_option_list.append((f'Mortgage RailRoad at position {self.position}', self.mortgage_property))
         return buy_mortgage_option_list
 
     def buy_property(self, active_player):
@@ -317,7 +330,7 @@ class OwnableTile(Tile):
     def count_similar_owned_properties(self, owner):
         num_tiles = 0
         for tile in owner.property_holdings:
-            if isinstance(self, tile):
+            if type(self) == type(tile):
                 num_tiles += 1
         return num_tiles
 
@@ -353,35 +366,33 @@ class RailRoadTile(OwnableTile):
         #Find the owner of the Tile
         owner = self.find_owner(players)
         if owner:
-            if owner == active_player:
-                if active_player.liquid_holdings >= self.property.possible_structures[0].price:
-                    return ('Build Trainsation', self.build_train_station)
-                else:
-                    return ()
-            elif active_player.dealt_card.actions == advance_token_to_nearset_railroad:
-                self.if_owned(active_player, owner, dice_roll)
-            return ()
+            return self.if_owned(active_player, owner, dice_roll=None)
         else:
             return self.if_not_owned(active_player)
 
-    #Refactor
     def if_owned(self, active_player, owner, dice_roll=None):
         num_owned_railroads = self.count_similar_owned_properties(owner)
-        #If the current tile has a trainstation on it
-        multiplier = 1
-        if active_player.dealt_card:
-            multiplier = 2
-        if self.property.existing_structures[0].type == 'trainstation':
-            active_player.liquid_holdings -= multiplier * self.property.base_rent * 4**(num_owned_railroads - 1)
-            owner.liquid_holdings += multiplier * self.property.base_rent * 4**(num_owned_railroads - 1)
+        if active_player == owner:
+            if len(self.property.existing_structures) == 0 and active_player.liquid_holdings >= self.property.possible_structures[0].price:
+                return [(f'Build Transtation at position {self.position}', self.build_train_station)]
+            else:
+                return []
         else:
-            active_player.liquid_holdings -= multiplier * self.property.base_rent * 2**(num_owned_railroads - 1)
-            owner.liquid_holdings += multiplier * self.property.base_rent * 2**(num_owned_railroads - 1)
+            multiplier = 1
+            if active_player.dealt_card:
+                multiplier = 2
+            if len(self.property.existing_structures) == 1 and self.property.existing_structures[0].type == 'transtation':
+                active_player.liquid_holdings -= multiplier * self.property.base_rent * 4**(num_owned_railroads - 1)
+                owner.liquid_holdings += multiplier * self.property.base_rent * 4**(num_owned_railroads - 1)
+            else:
+                active_player.liquid_holdings -= multiplier * self.property.base_rent * 2**(num_owned_railroads - 1)
+                owner.liquid_holdings += multiplier * self.property.base_rent * 2**(num_owned_railroads - 1)
+            return []
 
     def build_train_station(self, player):
         if player.liquid_holdings >= self.property.possible_structures[0].price:
             player.liquid_holdings -= self.property.possible_structures[0].price
-            self.property.existing_structures.append(self.property.possible_structures)
+            self.property.existing_structures.append(self.property.possible_structures[0])
 
 
 #This gets a bit weird...  So I need to know the size of the dice roll that caused the player to land on this tile
