@@ -317,9 +317,9 @@ class OwnableTile(Tile):
     def if_not_owned(self, active_player):
         buy_mortgage_option_list = []
         if self.property.price <= active_player.liquid_holdings:
-            buy_mortgage_option_list.append((f'Buy Railroad at position {self.position}', self.buy_property))
+            buy_mortgage_option_list.append(BuyPropertyOption(option_name=f'Buy Railroad at position {self.position}', action=self.buy_property, item_name=self.property.name))
         if self.property.mortgage_price <= active_player.liquid_holdings:
-            buy_mortgage_option_list.append((f'Mortgage RailRoad at position {self.position}', self.mortgage_property))
+            buy_mortgage_option_list.append(BuyPropertyOption(option_name=f'Mortgage RailRoad at position {self.position}', action=self.mortgage_property, item_name=self.property.name))
         return buy_mortgage_option_list
 
     def buy_property(self, active_player):
@@ -348,7 +348,7 @@ class OwnableTile(Tile):
             if len(self.property.existing_structures) > 0:
                 return []
             else:
-                return [(f'Sell {self.property.name}', self.sell_property)]
+                return [SellPropertyOption(option_name='Sell {self.property.name}', action=self.sell_property, item_name=self.property.name)]
         else:
             return []
 
@@ -382,7 +382,7 @@ class RailRoadTile(OwnableTile):
             sellability = self.determine_if_sellable(active_player)
             if sellability:
                 if active_player.liquid_holdings >= self.property.possible_structures[0].price:
-                    return sellability + [(f'Build Transtation at {self.property.name}', self.build_train_station)]
+                    return sellability + [Option(option_name='Build Transtation at {self.property.name}', action=self.build_train_station, item_name=self.property.name)]
                 else:
                     return sellability
         else:
