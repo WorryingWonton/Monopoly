@@ -553,6 +553,24 @@ class LuxuryTaxTile(UnownableTile):
 class FreeParking(Tile):
     pass
 
+class Option:
+    def __init__(self, option_name, item_name, action):
+        self.option_name = option_name
+        self.item_name = item_name
+        self.action = action
+
+class BuyPropertyOption(Option):
+    pass
+
+class SellPropertyOption(Option):
+    pass
+
+class SellCardOption(Option):
+    pass
+
+class ConsumeCardOption(Option):
+    pass
+
 
 
 
