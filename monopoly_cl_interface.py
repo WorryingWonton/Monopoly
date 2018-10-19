@@ -10,45 +10,41 @@ class CLInterface():
             selection = input(f'\nYour options are: {self.ml_printer(option_list)}\nWhat would you like to do {self.game.active_player.name}?\nType a number from the list and press Enter, to do nothing, enter 0:  ')
             if int(selection) == 0:
                 return None
-            list_item_types = [SellPropertyOption, SellCardOption]
-            if type(option_list[int(selection) - 1]) in list_item_types:
-                return self.list_item(option_list[int(selection) - 1])
-            return option_list[int(selection) - 1][1]
+            return option_list[int(selection) - 1].action
 
-        #Other player is chosen automatically and agrees to buy the property at $100
-    #Takes active player, requests input for the desired sell price of the property.
-        #Generates two additonal parameters,
-    def list_item(self, option):
-        player_list = [x for x in list(filter(lambda x: x != self.game.active_player, self.game.players))]
-        chosen_player = int(input(f'{self.game.active_player}, which player would you like to sell {option.item_name} to?\n{self.ml_printer(player_list)}\nEnter a number from the list above: '))
-        #TODO add defensive coding to deal with a player entering a letter, float, or symbol.
-        amount = int(f'You have chosen to sell {option.item_name} to {player_list[chosen_player - 1].name}.\nHow much would you like to sell this for?  Enter a whole dollar amount: ')
-        chosen_player_decision = strtobool(input(f'{player_list[chosen_player - 1].name}, {self.game.active_player.name} would like to buy {option.item_name} for {amount}.\nDo you want to buy this at that amount?\nAnswering in the negative will put the item up for auction.\n').lower())
-        if chosen_player_decision:
-            return option.action(active_player=self.game.active_player, buyer=player_list[chosen_player - 1], amount=amount)
+    """Direct sale methods are:
+        -get_amount(): asks the active_player how much they'd like to sell a particular item for
+            -Takes item as an input, and returns an int representing the sell price
+        -pick_eligible_buyer(): asks the active_player to pick from a list of eligible buyers (eligible = can afford to buy the item at the amount specified in the previous method)
+            -Takes a list of players as an input, returns a Player object
+        -get_buy_decision(): Asks the chosen buyer if they want to purchase the item
+            -Takes an OwnableItem object, Player object, and an int representing the amount as inputs, returns True or False 
+    """
+
+    def get_amount(self, item):
+        amount = int(input(f'{self.game.active_player.name}, how much would you like to sell {item.name}'))
+        return amount
+
+    def pick_eligible_buyer(self, eligible_buyers):
+        eligible_buyer = input()
+        return eligible_buyer
+
+    def get_buy_decision(self, item, buyer, amount):
+        buy_decision = input()
+        return buy_decision
 
 
-
-
-        # \nEnter the name of the player listed above:
-
-    # def ml_printer(self, option_list):
-    #     option_string = ''
-    #     for n, option in enumerate(option_list, start=1):
-    #         option_string += f'\n{n}: {option[0]}'
-    #     return option_string
 
     def ml_printer(self, option_list):
         option_string = ''
         for n, option in enumerate(option_list, start=1):
-            if type(option) == type(self.game.active_player):
-                option_string += f'\n{n}: {option.name}'
-            else:
-                option_string += f'\n{n}: {option.option_name}'
+            option_string += f'\n{n}: {option.option_name}'
         return option_string
 
 
-        # return '\n'.join([x[0] for x in option_list])
 
 if __name__ == '__main__':
     game_instance = Monopoly()
+
+
+

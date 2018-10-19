@@ -121,13 +121,28 @@ class Board:
                       ColorTile(position=39, color='blue', property=Property(name='Boardwalk', price=400, mortgage_price=200, possible_structures=[Structure('house', 200, 200), Structure('house', 200, 600), Structure('house', 200, 1400), Structure('house', 200, 1700), Structure('hotel', 200, 2000)], base_rent=50)),
                       ]
 
-class Card:
-    def __init__(self, face, action, holdable, passes_go):
-        self.face = face
+class OwnableItem:
+    """Takes an instance of the item and the active_player, makes a series of interface calls to handle the sale of a property.
+            -This method returns None
+                -This is done because the transaction function in both the Card and OwnableTile classes (sell_card() and sell_property() respectively) requires additional arguments that the execute_player_decision
+                    method in the Monopoly class cannot provide.  Therefore, this method is bypassed.
+            -If a direct sale cannot be made, then the item will go to auction (Note that the auction method(s) is in the cl_interface module.
+            """
+    def start_direct_sale_process(self, active_player):
+        pass
+
+    def start_auction_process(self, active_player):
+        pass
+
+class Card(OwnableItem):
+    def __init__(self, name, action, holdable, passes_go):
+        self.name = name
         self.action = action
         self.holdable = holdable
         self.passes_go = passes_go
         self.parent_deck = None
+
+
 
 
 @attr.s
@@ -155,44 +170,44 @@ class Deck:
     @staticmethod
     def build_chance_deck():
         chance_deck = Deck()
-        cards = [Card(face='Advance to Go', action=advance_to_go, holdable=False, passes_go=False),
-                 Card(face='Advance to Illinois Ave.', action=advance_to_illinois_ave, holdable=False, passes_go=True),
-                 Card(face='Advance to St. Charles Place', action=advance_to_st_charles_place, holdable=False, passes_go=True),
-                 Card(face='Advance token to nearest Utility', action=advance_to_nearest_utility, holdable=False, passes_go=False),
-                 Card(face='Advance token to the nearest Railroad', action=advance_token_to_nearset_railroad, holdable=False, passes_go=False),
-                 Card(face='Bank pays you dividend of $50', action=bank_pays_you_50_dividend, holdable=False, passes_go=False),
-                 Card(face='Get out of Jail Free', action=get_out_jail_free, holdable=True, passes_go=False),
-                 Card(face='Go back 3 Spaces', action=go_back_3_spaces, holdable=False, passes_go=False),
-                 Card(face='Go to Jail', action=go_to_jail, holdable=False, passes_go=False),
-                 Card(face='Make general repairs on all your property', action=make_general_repairs_on_all_property, holdable=False, passes_go=False),
-                 Card(face='Pay poor tax of $15', action=pay_poor_tax, holdable=False, passes_go=False),
-                 Card(face='Take a trip to Reading Railroad', action=take_trip_to_reading_railroad, holdable=False, passes_go=True),
-                 Card(face='Take a walk on the Boardwalk', action=take_a_walk_on_boardwalk, holdable=False, passes_go=False),
-                 Card(face='You have been elected Chairman of the Board', action=chairman_of_the_board, holdable=False, passes_go=False),
-                 Card(face='Your building loan matures', action=your_building_loan_matures, holdable=False, passes_go=False),
-                 Card(face='You have won a crossword competition', action=you_have_won_a_crossword_competition, holdable=False, passes_go=False)]
+        cards = [Card(name='Advance to Go', action=advance_to_go, holdable=False, passes_go=False),
+                 Card(name='Advance to Illinois Ave.', action=advance_to_illinois_ave, holdable=False, passes_go=True),
+                 Card(name='Advance to St. Charles Place', action=advance_to_st_charles_place, holdable=False, passes_go=True),
+                 Card(name='Advance token to nearest Utility', action=advance_to_nearest_utility, holdable=False, passes_go=False),
+                 Card(name='Advance token to the nearest Railroad', action=advance_token_to_nearset_railroad, holdable=False, passes_go=False),
+                 Card(name='Bank pays you dividend of $50', action=bank_pays_you_50_dividend, holdable=False, passes_go=False),
+                 Card(name='Get out of Jail Free', action=get_out_jail_free, holdable=True, passes_go=False),
+                 Card(name='Go back 3 Spaces', action=go_back_3_spaces, holdable=False, passes_go=False),
+                 Card(name='Go to Jail', action=go_to_jail, holdable=False, passes_go=False),
+                 Card(name='Make general repairs on all your property', action=make_general_repairs_on_all_property, holdable=False, passes_go=False),
+                 Card(name='Pay poor tax of $15', action=pay_poor_tax, holdable=False, passes_go=False),
+                 Card(name='Take a trip to Reading Railroad', action=take_trip_to_reading_railroad, holdable=False, passes_go=True),
+                 Card(name='Take a walk on the Boardwalk', action=take_a_walk_on_boardwalk, holdable=False, passes_go=False),
+                 Card(name='You have been elected Chairman of the Board', action=chairman_of_the_board, holdable=False, passes_go=False),
+                 Card(name='Your building loan matures', action=your_building_loan_matures, holdable=False, passes_go=False),
+                 Card(name='You have won a crossword competition', action=you_have_won_a_crossword_competition, holdable=False, passes_go=False)]
         for card in cards: chance_deck.add_card(card)
         return chance_deck
 
     @staticmethod
     def build_communbity_deck():
         community_deck = Deck()
-        cards = [Card(face='Advance to Go', action=advance_to_go, holdable=False, passes_go=False),
-                  Card(face='Bank error in your favor', action=bank_error_in_your_favor, holdable=False, passes_go=False),
-                  Card(face='Doctor\'s fees', action=doctors_fee, holdable=False, passes_go=False),
-                  Card(face='From sale of stock you get $50', action=from_sale_of_stock_50, holdable=False, passes_go=False),
-                  Card(face='Get out of Jail Free', action=get_out_jail_free, holdable=True, passes_go=False),
-                  Card(face='Go to Jail', action=go_to_jail, holdable=False, passes_go=False),
-                  Card(face='Grand Opera Night', action=grand_opera_night, holdable=False, passes_go=False),
-                  Card(face='Holiday', action=holiday_fund_matures, holdable=False, passes_go=False),
-                  Card(face='Income tax refund', action=income_tax_refund, holdable=False, passes_go=False),
-                  Card(face='Life insurance matures', action=life_insurace_matures, holdable=False, passes_go=False),
-                  Card(face='Pay hospital fees', action=pay_hospital_fees, holdable=False, passes_go=False),
-                  Card(face='Pay school fees', action=pay_school_fees, holdable=False, passes_go=False),
-                  Card(face='Receive $25 consultancy fee', action=receive_25_consultancy_fee, holdable=False, passes_go=False),
-                  Card(face='Your are assessed for street repairs', action=you_are_assessed_for_street_repairs, holdable=False, passes_go=False),
-                  Card(face='You have won second prize in a beauty contest', action=you_have_won_second_prize_in_a_beauty_contest, holdable=False, passes_go=False),
-                  Card(face='You inherit $100', action=you_inherit_100, holdable=False, passes_go=False)]
+        cards = [Card(name='Advance to Go', action=advance_to_go, holdable=False, passes_go=False),
+                  Card(name='Bank error in your favor', action=bank_error_in_your_favor, holdable=False, passes_go=False),
+                  Card(name='Doctor\'s fees', action=doctors_fee, holdable=False, passes_go=False),
+                  Card(name='From sale of stock you get $50', action=from_sale_of_stock_50, holdable=False, passes_go=False),
+                  Card(name='Get out of Jail Free', action=get_out_jail_free, holdable=True, passes_go=False),
+                  Card(name='Go to Jail', action=go_to_jail, holdable=False, passes_go=False),
+                  Card(name='Grand Opera Night', action=grand_opera_night, holdable=False, passes_go=False),
+                  Card(name='Holiday', action=holiday_fund_matures, holdable=False, passes_go=False),
+                  Card(name='Income tax refund', action=income_tax_refund, holdable=False, passes_go=False),
+                  Card(name='Life insurance matures', action=life_insurace_matures, holdable=False, passes_go=False),
+                  Card(name='Pay hospital fees', action=pay_hospital_fees, holdable=False, passes_go=False),
+                  Card(name='Pay school fees', action=pay_school_fees, holdable=False, passes_go=False),
+                  Card(name='Receive $25 consultancy fee', action=receive_25_consultancy_fee, holdable=False, passes_go=False),
+                  Card(name='Your are assessed for street repairs', action=you_are_assessed_for_street_repairs, holdable=False, passes_go=False),
+                  Card(name='You have won second prize in a beauty contest', action=you_have_won_second_prize_in_a_beauty_contest, holdable=False, passes_go=False),
+                  Card(name='You inherit $100', action=you_inherit_100, holdable=False, passes_go=False)]
         for card in cards: community_deck.add_card(card)
         return community_deck
 
@@ -206,12 +221,15 @@ class Player:
         #Contains a list of Tile objects the player currently owns properties on
         self.property_holdings = []
         self.debts = 0
-        self.consecutive_turns = 0
-        #Might axe this attribute after finishing the Tile subclasses, I don't think anything in the game is dependent upon knowing if the player is jailed or not jailed, aside from the dice roll method
+        self.jailed_turns = 0
         self.jailed = False
         self.hand = []
         self.game = game
         self.dealt_card = None
+
+    """Generates actions available to the Player, independent """
+    def player_actions(self):
+        pass
 
     def find_gross_worth(self):
         gross_worth = self.liquid_holdings
@@ -230,8 +248,7 @@ class Player:
             self.position += 40
         self.position = (self.position + amount) % 40
 
-    #Returns a list containing property colors where a given player can build on
-    #Should not be called on rail road or utility tiles
+    #TODO Move this method to the ColorTile class.
     @staticmethod
     def determine_buildable_tiles(player):
         #Number of each colored tile
@@ -250,19 +267,30 @@ class Player:
     def get_tile_at_player_position(self):
         return self.game.board[self.position]
 
-    def consume_held_card(self, card_face, card_deck):
-        cards = list(filter(lambda card: card.face == card_face.lower() and card.parent_deck == card_deck.lower(), self.hand))
-        if len(cards) > 1:
-            raise Exception(f'Duplicate cards in deck, there are {len(cards)} instances of {cards[0].face} belonging to the {cards[0].parent_deck} deck')
-        elif len(cards) == 0:
-            raise Exception(f'{card_face} beloning to the {card_deck} deck was not found in {self.game.active_player.name}\'s hand')
-        else:
-            card = cards[0]
-            card.action(self)
-            if card.parent_deck == 'community':
-                self.game.community_deck.append(card)
-            else:
-                self.game.chance_deck.append(card)
+    def generate_card_use_option(self):
+        card_options = []
+        for card in self.hand:
+            card_options.append(Option(item_name=card.face, action=card.action, option_name=f'Use {card.face}'))
+        return card_options
+
+    def begin_direct_sale_process(self):
+        amount = monopoly_cl_interface.get_amount()
+
+
+
+    # def consume_held_card(self, card_face, card_deck):
+    #     cards = list(filter(lambda card: card.face == card_face.lower() and card.parent_deck == card_deck.lower(), self.hand))
+    #     if len(cards) > 1:
+    #         raise Exception(f'Duplicate cards in deck, there are {len(cards)} instances of {cards[0].face} belonging to the {cards[0].parent_deck} deck')
+    #     elif len(cards) == 0:
+    #         raise Exception(f'{card_face} beloning to the {card_deck} deck was not found in {self.game.active_player.name}\'s hand')
+    #     else:
+    #         card = cards[0]
+    #         card.action(self)
+    #         if card.parent_deck == 'community':
+    #             self.game.community_deck.append(card)
+    #         else:
+    #             self.game.chance_deck.append(card)
 
 class Property:
 
@@ -297,7 +325,7 @@ class Tile:
 
 #Should be able to tell if the property on the Tile is on the market, how many like tiles the Owner of the landed on tile has, determine if the Tile can be sold (I think this may be unique to color tiles)
 @attr.s
-class OwnableTile(Tile):
+class OwnableTile(Tile, OwnableItem):
     property: Property = attr.ib()
 
     #Find owner of the tile in question, if no owner, return None
@@ -311,15 +339,12 @@ class OwnableTile(Tile):
     def if_owned(self, player, owner, dice_roll):
         pass
 
-    #The purpose of if_not_owned is to return whether or not the active_player can afford to buy the property of the ownable tile they've landed on
-        #It returns True if the player can afford to buy the Tile outright, and False if they cannot.
-        #tile_actions() will not include buying the property if the active_player cannot afford it
     def if_not_owned(self, active_player):
         buy_mortgage_option_list = []
         if self.property.price <= active_player.liquid_holdings:
-            buy_mortgage_option_list.append(BuyPropertyOption(option_name=f'Buy Railroad at position {self.position}', action=self.buy_property, item_name=self.property.name))
+            buy_mortgage_option_list.append(Option(option_name=f'Buy {self.property.name} at position: {self.position}', action=self.buy_property, item_name=self.property.name))
         if self.property.mortgage_price <= active_player.liquid_holdings:
-            buy_mortgage_option_list.append(BuyPropertyOption(option_name=f'Mortgage RailRoad at position {self.position}', action=self.mortgage_property, item_name=self.property.name))
+            buy_mortgage_option_list.append(Option(option_name=f'Mortgage {self.property.name} at position: {self.position}', action=self.mortgage_property, item_name=self.property.name))
         return buy_mortgage_option_list
 
     def buy_property(self, active_player):
@@ -343,12 +368,12 @@ class OwnableTile(Tile):
                 num_tiles += 1
         return num_tiles
 
-    def determine_if_sellable(self, player):
-        if self in player.property_holdings:
+    def determine_if_sellable(self, active_player):
+        if self in active_player.property_holdings:
             if len(self.property.existing_structures) > 0:
                 return []
             else:
-                return [SellPropertyOption(option_name='Sell {self.property.name}', action=self.sell_property, item_name=self.property.name)]
+                return [Option(option_name=f'Sell {self.property.name}', action=self.start_direct_sale_process, item_name=self.property.name)]
         else:
             return []
 
@@ -382,7 +407,7 @@ class RailRoadTile(OwnableTile):
             sellability = self.determine_if_sellable(active_player)
             if sellability:
                 if active_player.liquid_holdings >= self.property.possible_structures[0].price:
-                    return sellability + [Option(option_name='Build Transtation at {self.property.name}', action=self.build_train_station, item_name=self.property.name)]
+                    return sellability + [Option(option_name=f'Build Transtation at {self.property.name}', action=self.build_train_station, item_name=self.property.name)]
                 else:
                     return sellability
         else:
@@ -440,21 +465,21 @@ class JailTile(UnownableTile):
 
     @staticmethod
     def jailed_dice_roll(player):
-        if player.consecutive_turns == 3:
+        if player.jailed_turns == 3:
             dice_roll = HelperFunctions.roll_dice()
             if dice_roll[1] == dice_roll[2]:
                 player.position += dice_roll[1] + dice_roll[2]
             else:
                 player.position += dice_roll[1] + dice_roll[2]
-                player.consecutive_turns = 0
+                player.jailed_turns = 0
                 player.liquid_holdings -= 50
                 player.jailed = False
-        if player.consecutive_turns < 3:
+        if player.jailed_turns < 3:
             dice_roll = HelperFunctions.roll_dice()
             if dice_roll[1] == dice_roll[2]:
                 player.position += dice_roll[1] + dice_roll[2]
             else:
-                player.consecutive_turns += 1
+                player.jailed_turns += 1
 
     @staticmethod
     def pay_fine(player):
@@ -558,18 +583,6 @@ class Option:
         self.option_name = option_name
         self.item_name = item_name
         self.action = action
-
-class BuyPropertyOption(Option):
-    pass
-
-class SellPropertyOption(Option):
-    pass
-
-class SellCardOption(Option):
-    pass
-
-class ConsumeCardOption(Option):
-    pass
 
 
 
