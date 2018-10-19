@@ -25,7 +25,7 @@ class CLInterface():
         :param eligible_buyers: List of buyers who can afford the item at the amount specified in get_amount()
         :return: A Player object chosen by the active_player
         """
-        eligible_buyer = eligible_buyers[int(input('\nBelow is a list of the players who can afford to buy your item\n\nPick a number from the list and press Enter:  ')) - 1]
+        eligible_buyer = eligible_buyers[int(input(f'\nBelow is a list of the players who can afford to buy your item\n{self.ml_player_printer(eligible_buyers)}\nPick a number from the list and press Enter:  ')) - 1]
         return eligible_buyer
 
     def get_buy_decision(self, item, buyer, amount):
@@ -39,6 +39,12 @@ class CLInterface():
         option_string = ''
         for n, option in enumerate(option_list, start=1):
             option_string += f'\n{n}: {option.option_name}'
+        return option_string
+    #What's a good way to consolidate this with ml_printer?
+    def ml_player_printer(self, eligible_players):
+        option_string = ''
+        for n, player in enumerate(eligible_players, start=1):
+            option_string += f'\n{n}: {player.name}'
         return option_string
 
 

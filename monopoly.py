@@ -8,8 +8,6 @@ import random
 class Monopoly:
 
     def __init__(self):
-        #each player in the list contains information on their name, position, liquid and property holdings
-        #players whose net holdings are zero are ignored (might also design to just remove them from the list)
         self.players = []
         self.board = Board().board
         self.chance_deck = Deck.build_chance_deck()
@@ -65,7 +63,7 @@ class Monopoly:
             #Executive methods return None
     def execute_player_decision(self, active_player_decision):
         if active_player_decision:
-            active_player_decision.action(self.active_player)
+            active_player_decision.action(self)
 
     #Requries that all players that are going to participate have been added
         #Runs until someone wins, more precisely that the number of players is wittled down to one.
@@ -131,21 +129,25 @@ class OwnableItem:
                     method in the Monopoly class cannot provide.  Therefore, this method is bypassed.
             -If a direct sale cannot be made, then the item will go to auction (Note that the auction method(s) is in the cl_interface module.
             """
-    def start_direct_sale_process(self, active_player, game):
+    def start_direct_sale_process(self, game):
         pass
 
-    def find_eligible_buyers(self, players, amount, active_player):
-        return list(filter(lambda player: player.liquid_holdings >= amount and player != active_player, players))
+    def find_eligible_buyers(self, game, amount):
+        return list(filter(lambda player: player.liquid_holdings >= amount and player != game.active_player, game.players))
 
     def start_auction_process(self, active_player):
         pass
 
     def complete_transaction(self, buyer, seller, amount):
-        buyer.liquid_holdings -= amount
-        seller.property_holdings.remove(self)
-        buyer.property_holdings.append(self)
-        seller.liquid_holdings += amount
+        pass
 
+
+class Option:
+    def __init__(self, option_name, item_name, action):
+        self.option_name = option_name
+        self.item_name = item_name
+        self.action = action
+        self.item = None
 
 
 class Card(OwnableItem):
@@ -155,6 +157,25 @@ class Card(OwnableItem):
         self.holdable = holdable
         self.passes_go = passes_go
         self.parent_deck = None
+
+    def start_direct_sale_process(self, game):
+        amount = monopoly_cl_interface.CLInterface(game=game).get_amount(self)
+        eligible_buyers = self.find_eligible_buyers(game=game, amount=amount)
+        buyer = monopoly_cl_interface.CLInterface(game=game).pick_eligible_buyer(eligible_buyers)
+        if buyer:
+            buyer_decision = monopoly_cl_interface.CLInterface(game=game).get_buy_decision(item=self, buyer=buyer, amount=amount)
+            if buyer_decision:
+                self.complete_transaction(seller=game.active_player, amount=amount, buyer=buyer)
+            else:
+                return None
+        else:
+            return None
+
+    def complete_transaction(self, buyer, seller, amount):
+        buyer.liquid_holdings -= amount
+        seller.hand.remove(self)
+        seller.liquid_holdings += amount
+        buyer.hand.append(self)
 
 @attr.s
 class Deck:
@@ -177,6 +198,8 @@ class Deck:
     def add_card(self, card):
         self.cards.append(card)
         card.parent_deck = self
+
+
 
     @staticmethod
     def build_chance_deck():
@@ -278,20 +301,10 @@ class Player:
         card_options = []
         for card in self.hand:
             card_options.append(Option(item_name=card.name, action=card.action, option_name=f'Use {card.name}'))
-            card_options.append(Option(item_name=card.name, action=self.start_direct_sale_process(item=card), option_name=f'Sell {card.name}'))
+            card_options.append(Option(item_name=card.name, action=card.start_direct_sale_process, option_name=f'Sell {card.name}'))
         return card_options
 
-    def start_direct_sale_process(self, item):
-        amount = monopoly_cl_interface.CLInterface(game=self.game).get_amount(item)
-        buyer = item.find_eligible_buyers(active_player=self, players=self.game.players, amount=amount)
-        if buyer:
-            buyer_decision = monopoly_cl_interface.CLInterface(game=self.game).get_buy_decision(item=item, buyer=buyer, amount=amount)
-            if buyer_decision:
-                item.complete_transaction(buyer=buyer, seller=self.game.active_player)
-            else:
-                return None
-        else:
-            return None
+
 
 class Property:
 
@@ -348,18 +361,18 @@ class OwnableTile(Tile, OwnableItem):
             buy_mortgage_option_list.append(Option(option_name=f'Mortgage {self.property.name} at position: {self.position}', action=self.mortgage_property, item_name=self.property.name))
         return buy_mortgage_option_list
 
-    def buy_property(self, active_player):
-        active_player.liquid_holdings -= self.property.price
-        active_player.property_holdings.append(self)
+    def buy_property(self, game):
+        game.active_player.liquid_holdings -= self.property.price
+        game.active_player.property_holdings.append(self)
 
-    def mortgage_property(self, active_player):
-        active_player.liquid_holdings -= self.property.mortgage_price
-        active_player.property_holdings.append(self)
+    def mortgage_property(self, game):
+        game.active_player.liquid_holdings -= self.property.mortgage_price
+        game.active_player.property_holdings.append(self)
         self.property.mortgaged = True
 
-    def enact_auction_outcome(self, winning_player, winning_bid):
-        winning_player.liquid_holdings -= winning_bid
-        winning_player.property_holdings.append(self)
+    # def enact_auction_outcome(self, winning_player, winning_bid):
+    #     winning_player.liquid_holdings -= winning_bid
+    #     winning_player.property_holdings.append(self)
 
     #Below method finds out how many similar properties an owner has
     def count_similar_owned_properties(self, owner):
@@ -369,27 +382,33 @@ class OwnableTile(Tile, OwnableItem):
                 num_tiles += 1
         return num_tiles
 
-    def determine_if_sellable(self, active_player, game):
-        if self in active_player.property_holdings:
+    def determine_if_sellable(self, game):
+        if self in game.active_player.property_holdings:
             if len(self.property.existing_structures) > 0:
                 return []
             else:
-                return [Option(option_name=f'Sell {self.property.name}', action=self.start_direct_sale_process(active_player=active_player, game=game), item_name=self.property.name)]
+                return [Option(option_name=f'Sell {self.property.name}', action=self.start_direct_sale_process, item_name=self.property.name)]
         else:
             return []
 
-    def start_direct_sale_process(self, active_player, game):
+    def start_direct_sale_process(self, game):
         amount = monopoly_cl_interface.CLInterface(game=game).get_amount(item=self.property)
-        eligible_buyers = self.find_eligible_buyers(active_player=active_player, amount=amount, players=game.players)
+        eligible_buyers = self.find_eligible_buyers(game=game, amount=amount)
         buyer = monopoly_cl_interface.CLInterface(game=game).pick_eligible_buyer(eligible_buyers)
         if buyer:
             buyer_decision = monopoly_cl_interface.CLInterface(game=game).get_buy_decision(item=self.property, amount=amount, buyer=buyer)
             if buyer_decision:
-                self.complete_transaction(buyer=buyer, seller=active_player, amount=amount)
+                self.complete_transaction(buyer=buyer, seller=game.active_player, amount=amount)
             else:
                 pass
         else:
             pass
+
+    def complete_transaction(self, buyer, seller, amount):
+        buyer.liquid_holdings -= amount
+        seller.property_holdings.remove(self)
+        buyer.property_holdings.append(self)
+        seller.liquid_holdings += amount
 
 
 @attr.s
@@ -411,7 +430,7 @@ class RailRoadTile(OwnableTile):
     def if_owned(self, active_player, owner, game, dice_roll=None):
         num_owned_railroads = self.count_similar_owned_properties(owner)
         if active_player == owner:
-            sellability = self.determine_if_sellable(active_player, game=game)
+            sellability = self.determine_if_sellable(game)
             if sellability:
                 if active_player.liquid_holdings >= self.property.possible_structures[0].price:
                     return sellability + [Option(option_name=f'Build Transtation at {self.property.name}', action=self.build_train_station, item_name=self.property.name)]
@@ -427,11 +446,12 @@ class RailRoadTile(OwnableTile):
             else:
                 active_player.liquid_holdings -= multiplier * self.property.base_rent * 2**(num_owned_railroads - 1)
                 owner.liquid_holdings += multiplier * self.property.base_rent * 2**(num_owned_railroads - 1)
-            return []
+        return []
 
-    def build_train_station(self, player):
-        if player.liquid_holdings >= self.property.possible_structures[0].price:
-            player.liquid_holdings -= self.property.possible_structures[0].price
+
+    def build_train_station(self, game):
+        if game.active_player.liquid_holdings >= self.property.possible_structures[0].price:
+            game.active_player.liquid_holdings -= self.property.possible_structures[0].price
             self.property.existing_structures.append(self.property.possible_structures[0])
 
 
@@ -585,12 +605,7 @@ class LuxuryTaxTile(UnownableTile):
 class FreeParking(Tile):
     pass
 
-class Option:
-    def __init__(self, option_name, item_name, action):
-        self.option_name = option_name
-        self.item_name = item_name
-        self.action = action
-        # self.item = None
+
 
 
 
