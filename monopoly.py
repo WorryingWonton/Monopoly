@@ -1,4 +1,3 @@
-from distutils.util import strtobool
 from community_chest_functions import *
 from chance_deck_functions import *
 import attr
@@ -18,10 +17,9 @@ class Monopoly:
     def add_player(self, name):
         self.players.append(Player(name, game=self))
 
-    #Checks value of net value of assets for each player, if sum(player.debts) >= player.liquid_holdings (ie the net worth of the player is zero), then they are removed from the list of players
     def eject_bankrupt_players(self):
         for player in self.players:
-            if player.find_gross_worth() - player.debts <= 0:
+            if player.find_gross_worth() <= 0:
                 self.players.remove(player)
 
     def advance_turn(self):
@@ -267,7 +265,6 @@ class Player:
         self.liquid_holdings = 1500
         #Contains a list of Tile objects the player currently owns properties on
         self.property_holdings = []
-        self.debts = 0
         self.jailed_turns = 0
         self.jailed = False
         self.hand = []
@@ -343,10 +340,10 @@ class Structure:
 class Tile:
     position = attr.ib(type=int)
 
-    #Performs all appropriate actions associated with the Tile object in play
-        #Assumes active_player is on the Tile
 
     def tile_actions(self, active_player, players, dice_roll, game):
+        """Performs all appropriate actions associated with the Tile object in play
+            Assumes active_player is on the Tile"""
         pass
 
 
@@ -383,9 +380,13 @@ class OwnableTile(Tile, OwnableItem):
         game.active_player.property_holdings.append(self)
         self.property.mortgaged = True
 
-    # def enact_auction_outcome(self, winning_player, winning_bid):
-    #     winning_player.liquid_holdings -= winning_bid
-    #     winning_player.property_holdings.append(self)
+    def mortgage_owned_property(self, game):
+        game.active_player.liquid_holdings += self.property.mortgage_price
+        self.property.mortgaged = True
+
+    def lift_mortgage(self, game):
+        game.active_player.liquid_holdings -= 0.1*self.property.price
+        self.property.mortgaged = False
 
     #Below method finds out how many similar properties an owner has
     def count_similar_owned_properties(self, owner):
@@ -424,18 +425,23 @@ class OwnableTile(Tile, OwnableItem):
             self.complete_transaction(buyer=winning_bid[0], seller=game.active_player, amount=winning_bid[1])
 
     def complete_transaction(self, buyer, seller, amount):
-        buyer.liquid_holdings -= amount
+        if self.property.mortgaged:
+            """This seems to be a grey area in the rules.  Normally, amount is just the deed price of the property, however the rules do not specify what happens if
+            a mortgaged property is auctioned.  Or if, for that matter, if a mortgaged property can be auctioned.  I'm designing to the spec that a mortgaged property
+            can be auctioned and the extra 10% assessed is based off the deed price."""
+            immediate_unmortgage_decision = monopoly_cl_interface.CLInterface.get_buy_and_lift_mortgage_decision(buyer=buyer, seller=seller, amount=amount, item=self.property)
+            if immediate_unmortgage_decision:
+                self.property.mortgaged = False
+            buyer.liquid_holdings -= amount + 0.1*self.property.price
+        else:
+            buyer.liquid_holdings -= amount
         seller.property_holdings.remove(self)
         buyer.property_holdings.append(self)
         seller.liquid_holdings += amount
 
-
-
-
 @attr.s
 class UnownableTile(Tile):
     pass
-
 
 #tile_actions() needs to determine the Tile's state, perform automatic actions on the active_player as a function of that state, and return a list of options the player can choose from
 @attr.s
@@ -449,15 +455,22 @@ class RailRoadTile(OwnableTile):
             return self.if_not_owned(active_player)
 
     def if_owned(self, active_player, owner, game, dice_roll=None):
-        num_owned_railroads = self.count_similar_owned_properties(owner)
         if active_player == owner:
             sellability = self.determine_if_sellable(game)
             if sellability:
-                if active_player.liquid_holdings >= self.property.possible_structures[0].price:
+                if self.property.mortgaged:
+                    if active_player.liquid_holdings >= self.property.price * 0.1:
+                        return sellability + [Option(option_name=f'Lift Mortgage on {self.property.name}', action=self.lift_mortgage, item_name=self.property.name)]
+                    else:
+                        return sellability + [Option(option_name=f'Mortgage {self.propert.name}', action=self.mortgage_owned_property, item_name=self.property.name)]
+                elif active_player.liquid_holdings >= self.property.possible_structures[0].price:
                     return sellability + [Option(option_name=f'Build Transtation at {self.property.name}', action=self.build_train_station, item_name=self.property.name)]
                 else:
                     return sellability
+        elif self.property.mortgaged:
+            return []
         else:
+            num_owned_railroads = self.count_similar_owned_properties(owner)
             multiplier = 1
             if active_player.dealt_card:
                 multiplier = 2

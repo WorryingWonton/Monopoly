@@ -1,5 +1,6 @@
 from monopoly import *
 import time
+from distutils.util import strtobool
 
 
 class CLInterface():
@@ -34,8 +35,17 @@ class CLInterface():
         """
         get_buy_decision(): Asks the chosen buyer if they want to purchase the item
             -Takes an OwnableItem object, Player object, and an int representing the amount as inputs, returns True or False"""
-        buy_decision = strtobool(input(f'\n{self.game.active_player} would like to sell you (--{buyer.name}--) {item.name} for ${amount}.\nDo you want to buy the item for ${amount}?  Enter Yes or No:  ').lower())
+        buy_decision = strtobool(input(f'\n{self.game.active_player.name} would like to sell you (--{buyer.name}--) {item.name} for ${amount}.\nDo you want to buy the item for ${amount}?  Enter Yes or No:  ').lower())
         return buy_decision
+
+    @staticmethod
+    def get_buy_and_lift_mortgage_decision(item, buyer, seller, amount):
+        buy_decision = strtobool(input(f'''
+        {buyer.name}, you have chosen to buy {item.name} from {seller.name}.
+        This property is mortgaged.  You can lift the mortgage now for an additional {0.1*item.price} over {amount}
+        The total cost of doing so is {0.1*item.price + amount}.  
+        Unmortgaging a property at the time of purchase will save you an additional {0.1*item.price} later on as well as immediately let you charge rent and develop on {item.name}
+        Do you wish to buy and lift the mortgage?  Entering No will just buy the property:  ''').lower())
 
     def run_auction(self, item):
         participants = list(filter(lambda player: player != self.game.active_player, self.game.players))
@@ -44,9 +54,10 @@ class CLInterface():
         highest_bid = 0
         if time.time() < end_time and len(participants) > 1:
             for player in participants:
-                current_bid = input(f'''\n{player.name}, the highest bid for {item.name} is currently {highest_bid}.
-If you quit after submitting a bid, you are required to buy the item up for auction, if your bid is the highest bid.
-Enter an amount larger than {highest_bid}, enter an equal or smaller amount to quit the auction:  ''')
+                current_bid = input(f'''
+                {player.name}, the highest bid for {item.name} is currently {highest_bid}.
+                If you quit after submitting a bid, you are required to buy the item up for auction, if your bid is the highest bid.
+                Enter an amount larger than {highest_bid}, enter an equal or smaller amount to quit the auction:  ''')
                 try:
                     int(current_bid)
                 except:
