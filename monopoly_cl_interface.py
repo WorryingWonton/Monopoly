@@ -1,4 +1,6 @@
 from monopoly import *
+import time
+
 
 class CLInterface():
     def __init__(self, game):
@@ -35,11 +37,51 @@ class CLInterface():
         buy_decision = strtobool(input(f'\n{self.game.active_player} would like to sell you (--{buyer.name}--) {item.name} for ${amount}.\nDo you want to buy the item for ${amount}?  Enter Yes or No:  ').lower())
         return buy_decision
 
+    def run_auction(self, item):
+        participants = list(filter(lambda player: player != self.game.active_player, self.game.players))
+        winning_bid = ()
+        end_time = time.time() + self.game.auction_timer
+        highest_bid = 0
+        if time.time() < end_time and len(participants) > 1:
+            for player in participants:
+                current_bid = input(f'''\n{player.name}, the highest bid for {item.name} is currently {highest_bid}.
+If you quit after submitting a bid, you are required to buy the item up for auction, if your bid is the highest bid.
+Enter an amount larger than {highest_bid}, enter an equal or smaller amount to quit the auction:  ''')
+                try:
+                    int(current_bid)
+                except:
+                    participants.remove(player)
+                    break
+                current_bid = int(current_bid)
+                if current_bid <= highest_bid:
+                    participants.remove(player)
+                else:
+                    highest_bid = current_bid
+                    winning_bid = (player, highest_bid)
+        return winning_bid
+
+
+
+
+
+
+
+
+# """while True:
+#             total_points = input('Enter a number representing in total how many points this quiz is worth: ')
+#             try:
+#                 total_points = abs(float(total_points))
+#                 break
+#             except ValueError:
+#                 print('Please enter a number.')"""
+
+
     def ml_printer(self, option_list):
         option_string = ''
         for n, option in enumerate(option_list, start=1):
             option_string += f'\n{n}: {option.option_name}'
         return option_string
+
     #What's a good way to consolidate this with ml_printer?
     def ml_player_printer(self, eligible_players):
         option_string = ''

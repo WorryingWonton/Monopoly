@@ -13,6 +13,7 @@ class Monopoly:
         self.chance_deck = Deck.build_chance_deck()
         self.community_deck = Deck.build_communbity_deck()
         self.turns = 0
+        self.auction_timer = 10
 
     def add_player(self, name):
         self.players.append(Player(name, game=self))
@@ -37,7 +38,7 @@ class Monopoly:
         #     self.active_player.position += dice_roll
         print(f'{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name}')
         dice_roll = 0
-        if self.turns < 2:
+        if self.turns < len(self.players):
             dice_roll += 5
         else:
             dice_roll += 10
@@ -123,19 +124,29 @@ class Board:
                       ]
 
 class OwnableItem:
-    """Takes an instance of the item and the active_player, makes a series of interface calls to handle the sale of a property.
+
+    def start_direct_sale_process(self, game):
+        """Takes an instance of the item and the active_player, makes a series of interface calls to handle the sale of a property.
             -This method returns None
                 -This is done because the transaction function in both the Card and OwnableTile classes (sell_card() and sell_property() respectively) requires additional arguments that the execute_player_decision
                     method in the Monopoly class cannot provide.  Therefore, this method is bypassed.
             -If a direct sale cannot be made, then the item will go to auction (Note that the auction method(s) is in the cl_interface module.
             """
-    def start_direct_sale_process(self, game):
         pass
 
     def find_eligible_buyers(self, game, amount):
         return list(filter(lambda player: player.liquid_holdings >= amount and player != game.active_player, game.players))
 
-    def start_auction_process(self, active_player):
+    def start_auction_process(self, game):
+        """This method is called under three conditions:
+            1.  The active player calls it directly
+            2.  The amount the active player asked to sell an item for was higher than any other player could afford (i.e. find_eligible_players returned an empty list)
+            3.  The buyer chosen by the player did not want to buy the item
+            When it's called, all players except the active player have the chance to bid on the item for a set period of time.
+            Most of the work for handling an auction is done by the interface module, all this does is call CLInterface.run_auction(item) and parse the returned 2 tuple from
+            said method (WinngingPlayer, winning_bid).
+            If run_auction() returns None, this method passes.
+            """
         pass
 
     def complete_transaction(self, buyer, seller, amount):
@@ -147,7 +158,6 @@ class Option:
         self.option_name = option_name
         self.item_name = item_name
         self.action = action
-        self.item = None
 
 
 class Card(OwnableItem):
@@ -167,15 +177,20 @@ class Card(OwnableItem):
             if buyer_decision:
                 self.complete_transaction(seller=game.active_player, amount=amount, buyer=buyer)
             else:
-                return None
+                self.start_auction_process(game=game)
         else:
-            return None
+            self.start_auction_process(game=game)
 
     def complete_transaction(self, buyer, seller, amount):
         buyer.liquid_holdings -= amount
         seller.hand.remove(self)
         seller.liquid_holdings += amount
         buyer.hand.append(self)
+
+    def start_auction_process(self, game):
+        winning_bid = monopoly_cl_interface.CLInterface(game=game).run_auction(item=self)
+        if winning_bid:
+            self.complete_transaction(buyer=winning_bid[0], seller=game.active_player, amount=winning_bid[1])
 
 @attr.s
 class Deck:
@@ -198,8 +213,6 @@ class Deck:
     def add_card(self, card):
         self.cards.append(card)
         card.parent_deck = self
-
-
 
     @staticmethod
     def build_chance_deck():
@@ -302,8 +315,8 @@ class Player:
         for card in self.hand:
             card_options.append(Option(item_name=card.name, action=card.action, option_name=f'Use {card.name}'))
             card_options.append(Option(item_name=card.name, action=card.start_direct_sale_process, option_name=f'Sell {card.name}'))
+            card_options.append(Option(item_name=card.name, action=card.start_auction_process, option_name=f'Auction {card.name}'))
         return card_options
-
 
 
 class Property:
@@ -387,7 +400,8 @@ class OwnableTile(Tile, OwnableItem):
             if len(self.property.existing_structures) > 0:
                 return []
             else:
-                return [Option(option_name=f'Sell {self.property.name}', action=self.start_direct_sale_process, item_name=self.property.name)]
+                return [Option(option_name=f'Sell {self.property.name}', action=self.start_direct_sale_process, item_name=self.property.name),
+                        Option(option_name=f'Auction {self.property.name}', action=self.start_auction_process, item_name=self.property.name)]
         else:
             return []
 
@@ -400,15 +414,22 @@ class OwnableTile(Tile, OwnableItem):
             if buyer_decision:
                 self.complete_transaction(buyer=buyer, seller=game.active_player, amount=amount)
             else:
-                pass
+                self.start_auction_process(game=game)
         else:
-            pass
+            self.start_auction_process(game=game)
+
+    def start_auction_process(self, game):
+        winning_bid = monopoly_cl_interface.CLInterface(game=game).run_auction(item=self.property)
+        if winning_bid:
+            self.complete_transaction(buyer=winning_bid[0], seller=game.active_player, amount=winning_bid[1])
 
     def complete_transaction(self, buyer, seller, amount):
         buyer.liquid_holdings -= amount
         seller.property_holdings.remove(self)
         buyer.property_holdings.append(self)
         seller.liquid_holdings += amount
+
+
 
 
 @attr.s
@@ -453,6 +474,31 @@ class RailRoadTile(OwnableTile):
         if game.active_player.liquid_holdings >= self.property.possible_structures[0].price:
             game.active_player.liquid_holdings -= self.property.possible_structures[0].price
             self.property.existing_structures.append(self.property.possible_structures[0])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #This gets a bit weird...  So I need to know the size of the dice roll that caused the player to land on this tile

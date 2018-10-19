@@ -30,10 +30,6 @@ class TestPlayerInitialization(unittest.TestCase):
 class TestTurnHandling(unittest.TestCase):
     pass
 
-
-
-
-
 class TestCards(unittest.TestCase):
     #If a card is holdable, and the active_player opts to hold the card, then the card will be removed from the deck, and added to the active_player's hand
     #Else: Perform the action associated with the card, and move it to the end of the card list for that particular deck.
@@ -118,7 +114,8 @@ class TestSingleTurn(unittest.TestCase):
         game_instance = Monopoly()
         game_instance.add_player('David')
         game_instance.add_player('Sallie')
-        game_instance.players[0].hand.append(Card(name='Get out of Jail Free', action=get_out_jail_free, holdable=True, passes_go=False))
+        game_instance.add_player('Michelle')
+        # game_instance.players[0].hand.append(Card(name='Get out of Jail Free', action=get_out_jail_free, holdable=True, passes_go=False))
         print(game_instance.players[0].hand)
         result = game_instance.run_game()
         self.assertEqual('David', result.name)
