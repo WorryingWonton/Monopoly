@@ -10,30 +10,30 @@ class CLInterface():
             selection = input(f'\nYour options are: {self.ml_printer(option_list)}\nWhat would you like to do {self.game.active_player.name}?\nType a number from the list and press Enter, to do nothing, enter 0:  ')
             if int(selection) == 0:
                 return None
-            return option_list[int(selection) - 1].action
+            return option_list[int(selection) - 1]
 
-    """Direct sale methods are:
-        -get_amount(): asks the active_player how much they'd like to sell a particular item for
-            -Takes item as an input, and returns an int representing the sell price
-        -pick_eligible_buyer(): asks the active_player to pick from a list of eligible buyers (eligible = can afford to buy the item at the amount specified in the previous method)
-            -Takes a list of players as an input, returns a Player object
-        -get_buy_decision(): Asks the chosen buyer if they want to purchase the item
-            -Takes an OwnableItem object, Player object, and an int representing the amount as inputs, returns True or False 
-    """
 
     def get_amount(self, item):
-        amount = int(input(f'{self.game.active_player.name}, how much would you like to sell {item.name}'))
+        """
+        get_amount(): asks the active_player how much they'd like to sell a particular item for
+            -Takes item as an input, and returns an int representing the sell price"""
+        amount = int(input(f'\n{self.game.active_player.name}, how much would you like to sell {item.name} for?'))
         return amount
 
     def pick_eligible_buyer(self, eligible_buyers):
-        eligible_buyer = input()
+        """
+        :param eligible_buyers: List of buyers who can afford the item at the amount specified in get_amount()
+        :return: A Player object chosen by the active_player
+        """
+        eligible_buyer = eligible_buyers[int(input('\nBelow is a list of the players who can afford to buy your item\n\nPick a number from the list and press Enter:  ')) - 1]
         return eligible_buyer
 
     def get_buy_decision(self, item, buyer, amount):
-        buy_decision = input()
+        """
+        get_buy_decision(): Asks the chosen buyer if they want to purchase the item
+            -Takes an OwnableItem object, Player object, and an int representing the amount as inputs, returns True or False"""
+        buy_decision = strtobool(input(f'\n{self.game.active_player} would like to sell you (--{buyer.name}--) {item.name} for ${amount}.\nDo you want to buy the item for ${amount}?  Enter Yes or No:  ').lower())
         return buy_decision
-
-
 
     def ml_printer(self, option_list):
         option_string = ''
