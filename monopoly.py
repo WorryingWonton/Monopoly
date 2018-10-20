@@ -4,6 +4,34 @@ import attr
 import monopoly_cl_interface
 import random
 
+#TODO before implementing remaining Tiles
+""" 1. Modify the eject bankrupt players method to handle bankruptcy per the rules of Monopoly
+        I. If a player is unable to complete a transaction with the active_player OR the active_player is unable to pay rent after landing on a Tile
+            1. The transaction case will only occur during an auction, as there (and only there) it's possible for a player to pay the active_player more money than they actually have
+            2. When either case happens, the active_player receives all properties owned by the player, and the player's liquid assets
+                a. Existing structures are removed from each Property object, and the active_player is credited 1/2 of their combined worth
+                b. For each property that is mortgaged, deduct 0.1*Property.price from the active_player's liquid holdings 
+                    I. This will not set Property.mortgaged to False
+            3. The bankrupt player is ejected from the game.
+        II. If the active_player is unable to pay a penalty imposed by the bank (Tax, JailFine)
+            1.  All existing structures on the active_player's properties are removed.
+            2.  All properties in the active_player's property holdings and all cards in the player's hand are copied to an auction list
+            3.  The active_player is ejected from the game
+            4.  All properties (and cards) are put up for auction
+    2. Add functionality to the eject bankrupt players method which removes all existing structures the properties in a player's property holdings
+    3. Remove the timer from the auction
+        With a single command line interface for multiple people, someone can keep track of the time.
+        This unconditionally allows the person who most wants and is most able to buy the property to do so.
+    4. Add the ability for the active player to request to buy properties (and cards) owned by other players
+        This will require making a second direct_sale method, in this case 'start_direct_purchase', an instance method on the OwnableItem to be sold
+    5. Add the ability for the player to sell unimproved properties to the bank 1/2 their deed price
+        Option is made available if the property is sellable (using determine_sellability)
+        Property is removed from active player's property holdings
+    6. Add the ability for the player to remove TrainStations on their RailRoadTiles
+    7. Add go to jail functionality if the active player has more than three consecutive turns via throwing doubles
+        This will need to be a core Monopoly method 
+     """
+
 class Monopoly:
 
     def __init__(self):
@@ -13,6 +41,7 @@ class Monopoly:
         self.community_deck = Deck.build_communbity_deck()
         self.turns = 0
         self.auction_timer = 10
+        self.consecutive_doubles = 0
 
     def add_player(self, name):
         self.players.append(Player(name, game=self))
@@ -74,6 +103,23 @@ class Monopoly:
             self.advance_turn()
         return self.players[0]
 
+    def player_to_player_bankruptcy_process(self, creditor, debtor):
+        if debtor.liquid_holdings > 0:
+            creditor.liquid_holdings += debtor.liquid_holdings
+        for tile in debtor.property_holdings:
+            if tile.property.mortgaged:
+                creditor.liquid_holdings -= 0.1 * tile.property.mortgage_price
+                for structure in tile.property.existing_structures:
+                    creditor.liquid_holdings += 0.5 * structure.price
+                #Remove all structures after sale to bank
+                tile.property.existing_structures = []
+                creditor.property_holdings.append(tile)
+        self.players.remove(debtor)
+                
+
+
+    def player_to_bank_bankruptcy_process(self):
+        pass
 
 #The board object is a list of Tile objects
 class Board:
@@ -147,7 +193,7 @@ class OwnableItem:
             """
         pass
 
-    def complete_transaction(self, buyer, seller, amount):
+    def complete_transaction(self, buyer, seller, amount, game):
         pass
 
 
@@ -173,14 +219,17 @@ class Card(OwnableItem):
         if buyer:
             buyer_decision = monopoly_cl_interface.CLInterface(game=game).get_buy_decision(item=self, buyer=buyer, amount=amount)
             if buyer_decision:
-                self.complete_transaction(seller=game.active_player, amount=amount, buyer=buyer)
+                self.complete_transaction(seller=game.active_player, amount=amount, buyer=buyer, game=game)
             else:
                 self.start_auction_process(game=game)
         else:
             self.start_auction_process(game=game)
 
-    def complete_transaction(self, buyer, seller, amount):
+    def complete_transaction(self, buyer, seller, amount, game):
         buyer.liquid_holdings -= amount
+        if buyer.liquid_holdings < 0:
+            game.player_to_player_bankruptcy_process(creditor=seller, debtor=buyer)
+            return
         seller.hand.remove(self)
         seller.liquid_holdings += amount
         buyer.hand.append(self)
@@ -188,7 +237,10 @@ class Card(OwnableItem):
     def start_auction_process(self, game):
         winning_bid = monopoly_cl_interface.CLInterface(game=game).run_auction(item=self)
         if winning_bid:
-            self.complete_transaction(buyer=winning_bid[0], seller=game.active_player, amount=winning_bid[1])
+            if winning_bid[0].liquid_holdings < winning_bid[1]:
+                game.player_to_player_bankruptcy_process(debtor=winning_bid[0], creditor=game.active_player)
+            else:
+                self.complete_transaction(buyer=winning_bid[0], seller=game.active_player, amount=winning_bid[1])
 
 @attr.s
 class Deck:
@@ -385,7 +437,7 @@ class OwnableTile(Tile, OwnableItem):
         self.property.mortgaged = True
 
     def lift_mortgage(self, game):
-        game.active_player.liquid_holdings -= 0.1*self.property.price
+        game.active_player.liquid_holdings -= 0.1*self.property.mortgage_price
         self.property.mortgaged = False
 
     #Below method finds out how many similar properties an owner has
@@ -413,7 +465,7 @@ class OwnableTile(Tile, OwnableItem):
         if buyer:
             buyer_decision = monopoly_cl_interface.CLInterface(game=game).get_buy_decision(item=self.property, amount=amount, buyer=buyer)
             if buyer_decision:
-                self.complete_transaction(buyer=buyer, seller=game.active_player, amount=amount)
+                self.complete_transaction(buyer=buyer, seller=game.active_player, amount=amount, game=game)
             else:
                 self.start_auction_process(game=game)
         else:
@@ -422,17 +474,24 @@ class OwnableTile(Tile, OwnableItem):
     def start_auction_process(self, game):
         winning_bid = monopoly_cl_interface.CLInterface(game=game).run_auction(item=self.property)
         if winning_bid:
-            self.complete_transaction(buyer=winning_bid[0], seller=game.active_player, amount=winning_bid[1])
+            if winning_bid[0].liquid_holdings < winning_bid[1]:
+                game.player_to_player_bankruptcy_process(debtor=winning_bid[0], creditor=game.active_player)
+            self.complete_transaction(buyer=winning_bid[0], seller=game.active_player, amount=winning_bid[1], game=game)
 
-    def complete_transaction(self, buyer, seller, amount):
+    def complete_transaction(self, buyer, seller, amount, game):
         if self.property.mortgaged:
             """This seems to be a grey area in the rules.  Normally, amount is just the deed price of the property, however the rules do not specify what happens if
             a mortgaged property is auctioned.  Or if, for that matter, if a mortgaged property can be auctioned.  I'm designing to the spec that a mortgaged property
             can be auctioned and the extra 10% assessed is based off the deed price."""
-            immediate_unmortgage_decision = monopoly_cl_interface.CLInterface.get_buy_and_lift_mortgage_decision(buyer=buyer, seller=seller, amount=amount, item=self.property)
-            if immediate_unmortgage_decision:
-                self.property.mortgaged = False
-            buyer.liquid_holdings -= amount + 0.1*self.property.price
+            if amount + 1.1 * self.property.mortgage_price <= buyer.liquid_holdings:
+                immediate_unmortgage_decision = monopoly_cl_interface.CLInterface.get_buy_and_lift_mortgage_decision(buyer=buyer, seller=seller, amount=amount, item=self.property)
+                if immediate_unmortgage_decision:
+                    self.property.mortgaged = False
+                    buyer.liquid_holdings -= 1.1 * self.property.mortgage_price
+            buyer.liquid_holdings -= amount + 0.1*self.property.mortgage_price
+            if buyer.liquid_holdings < 0:
+                game.player_to_player_bankruptcy_process(debtor=buyer, creditor=seller)
+                return
         else:
             buyer.liquid_holdings -= amount
         seller.property_holdings.remove(self)

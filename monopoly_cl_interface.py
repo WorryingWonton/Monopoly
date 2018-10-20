@@ -46,6 +46,7 @@ class CLInterface():
         The total cost of doing so is {0.1*item.price + amount}.  
         Unmortgaging a property at the time of purchase will save you an additional {0.1*item.price} later on as well as immediately let you charge rent and develop on {item.name}
         Do you wish to buy and lift the mortgage?  Entering No will just buy the property:  ''').lower())
+        return buy_decision
 
     def run_auction(self, item):
         participants = list(filter(lambda player: player != self.game.active_player, self.game.players))
