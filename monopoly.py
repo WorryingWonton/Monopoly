@@ -42,13 +42,14 @@ class Monopoly:
         self.turns = 0
         self.auction_timer = 10
         self.consecutive_doubles = 0
+        self.bank = Bank(game=self)
 
     def add_player(self, name):
         self.players.append(Player(name, game=self))
 
     def eject_bankrupt_players(self):
         for player in self.players:
-            if player.find_gross_worth() <= 0:
+            if player.liquid_holdings < 0:
                 self.players.remove(player)
 
     def advance_turn(self):
@@ -63,7 +64,7 @@ class Monopoly:
         # dice_roll = HelperFunctions.roll_dice()
         # if not self.active_player.jailed:
         #     self.active_player.position += dice_roll
-        print(f'{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name}')
+        print(f'\n{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name} --- {[x.property.name for x in self.active_player.property_holdings]}')
         dice_roll = 0
         if self.turns < len(self.players):
             dice_roll += 5
@@ -72,13 +73,15 @@ class Monopoly:
         self.active_player.advance_position(dice_roll)
         option_list = []
         tile_options = self.board[self.active_player.position].tile_actions(active_player=self.active_player, players=self.players, dice_roll=dice_roll, game=self)
-        for tile in self.active_player.property_holdings:
-            if tile.position == self.active_player.position:
-                pass
-            options = tile.tile_actions(active_player=self.active_player, players=self.players, dice_roll=dice_roll, game=self)
-            for option in options:
-                tile_options.append(option)
-        option_list += tile_options
+        if tile_options:
+            for tile in self.active_player.property_holdings:
+                if tile.position == self.active_player.position:
+                    continue
+                options = tile.tile_actions(active_player=self.active_player, players=self.players, dice_roll=dice_roll, game=self)
+                if options:
+                    for option in options:
+                        tile_options.append(option)
+            option_list += tile_options
         player_options = self.active_player.player_actions()
         if len(player_options) > 0:
             option_list += player_options
@@ -99,27 +102,38 @@ class Monopoly:
     def run_game(self):
         while len(self.players) > 1:
             self.run_turn()
-            self.eject_bankrupt_players()
+            # self.eject_bankrupt_players()
             self.advance_turn()
         return self.players[0]
 
-    def player_to_player_bankruptcy_process(self, creditor, debtor):
-        if debtor.liquid_holdings > 0:
+    def run_bankruptcy_process(self, creditor, debtor):
+        #Perhaps unnecessary check to make sure the creditor is not being passed on debt
+        if debtor.liquid_holdings >= 0:
             creditor.liquid_holdings += debtor.liquid_holdings
         for tile in debtor.property_holdings:
             if tile.property.mortgaged:
                 creditor.liquid_holdings -= 0.1 * tile.property.mortgage_price
-                for structure in tile.property.existing_structures:
-                    creditor.liquid_holdings += 0.5 * structure.price
+            for structure in tile.property.existing_structures:
+                creditor.liquid_holdings += 0.5 * structure.price
                 #Remove all structures after sale to bank
-                tile.property.existing_structures = []
-                creditor.property_holdings.append(tile)
+            tile.property.existing_structures = []
+            creditor.property_holdings.append(tile)
         self.players.remove(debtor)
-                
+        if creditor == self.bank:
+            self.run_bank_auction()
 
+    def run_bank_auction(self):
+        for tile in self.bank.property_holdings:
+            winning_bid = monopoly_cl_interface.CLInterface(game=self).run_auction(item=tile.property, seller=self.bank)
+            if winning_bid:
+                tile.complete_transaction(buyer=winning_bid[0], seller=self.bank, amount=winning_bid[1])
+        for card in self.bank.hand:
+            winning_bid = monopoly_cl_interface.CLInterface(game=self).run_auction(item=card, seller=self.bank)
+            if winning_bid:
+                card.complete_transaction(buyer=winning_bid[0], seller=self.bank, amoun=winning_bid[1])
+        self.bank.property_holdings = []
+        self.bank.hand = []
 
-    def player_to_bank_bankruptcy_process(self):
-        pass
 
 #The board object is a list of Tile objects
 class Board:
@@ -178,10 +192,13 @@ class OwnableItem:
             """
         pass
 
+    def start_direct_buy_process(self, game):
+        pass
+
     def find_eligible_buyers(self, game, amount):
         return list(filter(lambda player: player.liquid_holdings >= amount and player != game.active_player, game.players))
 
-    def start_auction_process(self, game):
+    def start_auction_process(self, game, seller):
         """This method is called under three conditions:
             1.  The active player calls it directly
             2.  The amount the active player asked to sell an item for was higher than any other player could afford (i.e. find_eligible_players returned an empty list)
@@ -195,7 +212,6 @@ class OwnableItem:
 
     def complete_transaction(self, buyer, seller, amount, game):
         pass
-
 
 class Option:
     def __init__(self, option_name, item_name, action):
@@ -221,26 +237,29 @@ class Card(OwnableItem):
             if buyer_decision:
                 self.complete_transaction(seller=game.active_player, amount=amount, buyer=buyer, game=game)
             else:
-                self.start_auction_process(game=game)
+                self.start_auction_process(game=game, seller=game.active_player)
         else:
-            self.start_auction_process(game=game)
+            self.start_auction_process(game=game, seller=game.active_player)
+
+    def start_direct_buy_process(self, game):
+        card_holders = []
 
     def complete_transaction(self, buyer, seller, amount, game):
         buyer.liquid_holdings -= amount
         if buyer.liquid_holdings < 0:
-            game.player_to_player_bankruptcy_process(creditor=seller, debtor=buyer)
+            game.run_bankruptcy_process(creditor=seller, debtor=buyer)
             return
         seller.hand.remove(self)
         seller.liquid_holdings += amount
         buyer.hand.append(self)
 
-    def start_auction_process(self, game):
-        winning_bid = monopoly_cl_interface.CLInterface(game=game).run_auction(item=self)
+    def start_auction_process(self, game, seller):
+        winning_bid = monopoly_cl_interface.CLInterface(game=game).run_auction(item=self, seller=seller)
         if winning_bid:
             if winning_bid[0].liquid_holdings < winning_bid[1]:
-                game.player_to_player_bankruptcy_process(debtor=winning_bid[0], creditor=game.active_player)
+                game.run_bankruptcy_process(debtor=winning_bid[0], creditor=game.active_player)
             else:
-                self.complete_transaction(buyer=winning_bid[0], seller=game.active_player, amount=winning_bid[1])
+                self.complete_transaction(buyer=winning_bid[0], seller=game.active_player, amount=winning_bid[1], game=game)
 
 @attr.s
 class Deck:
@@ -308,6 +327,13 @@ class Deck:
         for card in cards: community_deck.add_card(card)
         return community_deck
 
+class Bank:
+    def __init__(self, game):
+        self.name = 'the Bank'
+        self.game = game
+        self.property_holdings = []
+        self.liquid_holdings = 0
+        self.hand = []
 
 class Player:
 
@@ -364,7 +390,7 @@ class Player:
         for card in self.hand:
             card_options.append(Option(item_name=card.name, action=card.action, option_name=f'Use {card.name}'))
             card_options.append(Option(item_name=card.name, action=card.start_direct_sale_process, option_name=f'Sell {card.name}'))
-            card_options.append(Option(item_name=card.name, action=card.start_auction_process, option_name=f'Auction {card.name}'))
+
         return card_options
 
 
@@ -453,8 +479,7 @@ class OwnableTile(Tile, OwnableItem):
             if len(self.property.existing_structures) > 0:
                 return []
             else:
-                return [Option(option_name=f'Sell {self.property.name}', action=self.start_direct_sale_process, item_name=self.property.name),
-                        Option(option_name=f'Auction {self.property.name}', action=self.start_auction_process, item_name=self.property.name)]
+                return [Option(option_name=f'Sell {self.property.name}', action=self.start_direct_sale_process, item_name=self.property.name)]
         else:
             return []
 
@@ -467,15 +492,15 @@ class OwnableTile(Tile, OwnableItem):
             if buyer_decision:
                 self.complete_transaction(buyer=buyer, seller=game.active_player, amount=amount, game=game)
             else:
-                self.start_auction_process(game=game)
+                self.start_auction_process(game=game, seller=game.active_player)
         else:
-            self.start_auction_process(game=game)
+            self.start_auction_process(game=game, seller=game.active_player)
 
-    def start_auction_process(self, game):
-        winning_bid = monopoly_cl_interface.CLInterface(game=game).run_auction(item=self.property)
+    def start_auction_process(self, game, seller):
+        winning_bid = monopoly_cl_interface.CLInterface(game=game).run_auction(item=self.property, seller=seller)
         if winning_bid:
             if winning_bid[0].liquid_holdings < winning_bid[1]:
-                game.player_to_player_bankruptcy_process(debtor=winning_bid[0], creditor=game.active_player)
+                game.run_bankruptcy_process(debtor=winning_bid[0], creditor=game.active_player)
             self.complete_transaction(buyer=winning_bid[0], seller=game.active_player, amount=winning_bid[1], game=game)
 
     def complete_transaction(self, buyer, seller, amount, game):
@@ -490,7 +515,7 @@ class OwnableTile(Tile, OwnableItem):
                     buyer.liquid_holdings -= 1.1 * self.property.mortgage_price
             buyer.liquid_holdings -= amount + 0.1*self.property.mortgage_price
             if buyer.liquid_holdings < 0:
-                game.player_to_player_bankruptcy_process(debtor=buyer, creditor=seller)
+                game.run_bankruptcy_process(debtor=buyer, creditor=seller)
                 return
         else:
             buyer.liquid_holdings -= amount
@@ -529,19 +554,24 @@ class RailRoadTile(OwnableTile):
         elif self.property.mortgaged:
             return []
         else:
-            num_owned_railroads = self.count_similar_owned_properties(owner)
-            multiplier = 1
-            if active_player.dealt_card:
-                multiplier = 2
-            if len(self.property.existing_structures) == 1 and self.property.existing_structures[0].type == 'transtation':
-                active_player.liquid_holdings -= multiplier * self.property.base_rent * 4**(num_owned_railroads - 1)
-                owner.liquid_holdings += multiplier * self.property.base_rent * 4**(num_owned_railroads - 1)
-            else:
-                active_player.liquid_holdings -= multiplier * self.property.base_rent * 2**(num_owned_railroads - 1)
-                owner.liquid_holdings += multiplier * self.property.base_rent * 2**(num_owned_railroads - 1)
-        return []
+            self.assess_rent(owner=owner, game=game)
+            return []
 
-
+    def assess_rent(self, owner, game):
+        num_owned_railroads = self.count_similar_owned_properties(owner)
+        multiplier = 1
+        if game.active_player.dealt_card:
+            multiplier = 2
+        if len(self.property.existing_structures) == 1 and self.property.existing_structures[0].type == 'transtation':
+            rent = multiplier * self.property.base_rent * 4**(num_owned_railroads - 1)
+        else:
+            rent = multiplier * self.property.base_rent * 2**(num_owned_railroads - 1)
+        if rent > game.active_player.liquid_holdings:
+            game.run_bankruptcy_process(debtor=game.active_player, creditor=owner)
+        else:
+            owner.liquid_holdings += rent
+            game.active_player.liquid_holdings -= rent
+            
     def build_train_station(self, game):
         if game.active_player.liquid_holdings >= self.property.possible_structures[0].price:
             game.active_player.liquid_holdings -= self.property.possible_structures[0].price

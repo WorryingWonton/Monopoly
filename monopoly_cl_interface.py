@@ -15,7 +15,6 @@ class CLInterface():
                 return None
             return option_list[int(selection) - 1]
 
-
     def get_amount(self, item):
         """
         get_amount(): asks the active_player how much they'd like to sell a particular item for
@@ -48,12 +47,11 @@ class CLInterface():
         Do you wish to buy and lift the mortgage?  Entering No will just buy the property:  ''').lower())
         return buy_decision
 
-    def run_auction(self, item):
-        participants = list(filter(lambda player: player != self.game.active_player, self.game.players))
+    def run_auction(self, item, seller):
+        participants = list(filter(lambda player: player != seller, self.game.players))
         winning_bid = ()
-        end_time = time.time() + self.game.auction_timer
         highest_bid = 0
-        if time.time() < end_time and len(participants) > 1:
+        while len(participants) > 1:
             for player in participants:
                 current_bid = input(f'''
                 {player.name}, the highest bid for {item.name} is currently {highest_bid}.
@@ -71,22 +69,6 @@ class CLInterface():
                     highest_bid = current_bid
                     winning_bid = (player, highest_bid)
         return winning_bid
-
-
-
-
-
-
-
-
-# """while True:
-#             total_points = input('Enter a number representing in total how many points this quiz is worth: ')
-#             try:
-#                 total_points = abs(float(total_points))
-#                 break
-#             except ValueError:
-#                 print('Please enter a number.')"""
-
 
     def ml_printer(self, option_list):
         option_string = ''
