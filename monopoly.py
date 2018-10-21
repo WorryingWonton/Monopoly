@@ -218,6 +218,7 @@ class Option:
         self.option_name = option_name
         self.item_name = item_name
         self.action = action
+        self.item = None
 
 
 class Card(OwnableItem):
@@ -229,7 +230,7 @@ class Card(OwnableItem):
         self.parent_deck = None
 
     def start_direct_sale_process(self, game):
-        amount = monopoly_cl_interface.CLInterface(game=game).get_amount(self)
+        amount = monopoly_cl_interface.CLInterface(game=game).get_amount_to_sell(self)
         eligible_buyers = self.find_eligible_buyers(game=game, amount=amount)
         buyer = monopoly_cl_interface.CLInterface(game=game).pick_eligible_buyer(eligible_buyers)
         if buyer:
@@ -242,7 +243,7 @@ class Card(OwnableItem):
             self.start_auction_process(game=game, seller=game.active_player)
 
     def start_direct_buy_process(self, game):
-        card_holders = []
+        pass
 
     def complete_transaction(self, buyer, seller, amount, game):
         buyer.liquid_holdings -= amount
@@ -390,9 +391,10 @@ class Player:
         for card in self.hand:
             card_options.append(Option(item_name=card.name, action=card.action, option_name=f'Use {card.name}'))
             card_options.append(Option(item_name=card.name, action=card.start_direct_sale_process, option_name=f'Sell {card.name}'))
+        return card_options + self.list_cards_of_other_players()
 
-        return card_options
-
+    def list_cards_of_other_players(self):
+        return [Option(option_name=f'Buy {card.name}', item_name=card.name, action=card.start_direct_buy_process(game=self.game)) for card in list(filter(lambda player: player != self.game.active_player and len(player.hand) > 0, self.game.players))]
 
 class Property:
 
@@ -418,7 +420,6 @@ class Structure:
 class Tile:
     position = attr.ib(type=int)
 
-
     def tile_actions(self, active_player, players, dice_roll, game):
         """Performs all appropriate actions associated with the Tile object in play
             Assumes active_player is on the Tile"""
@@ -430,7 +431,7 @@ class Tile:
 class OwnableTile(Tile, OwnableItem):
     property: Property = attr.ib()
 
-    #Find owner of the tile in question, if no owner, return None
+    #Find owner of tile occupied by the active_player, if no owner, return None
     def find_owner(self, players):
         for player in players:
             for property in player.property_holdings:
@@ -474,8 +475,8 @@ class OwnableTile(Tile, OwnableItem):
                 num_tiles += 1
         return num_tiles
 
-    def determine_if_sellable(self, game):
-        if self in game.active_player.property_holdings:
+    def determine_if_sellable(self, owner):
+        if self in owner.property_holdings:
             if len(self.property.existing_structures) > 0:
                 return []
             else:
@@ -484,7 +485,7 @@ class OwnableTile(Tile, OwnableItem):
             return []
 
     def start_direct_sale_process(self, game):
-        amount = monopoly_cl_interface.CLInterface(game=game).get_amount(item=self.property)
+        amount = monopoly_cl_interface.CLInterface(game=game).get_amount_to_sell(item=self.property)
         eligible_buyers = self.find_eligible_buyers(game=game, amount=amount)
         buyer = monopoly_cl_interface.CLInterface(game=game).pick_eligible_buyer(eligible_buyers)
         if buyer:
@@ -495,6 +496,21 @@ class OwnableTile(Tile, OwnableItem):
                 self.start_auction_process(game=game, seller=game.active_player)
         else:
             self.start_auction_process(game=game, seller=game.active_player)
+
+    def start_direct_buy_process(self, game):
+        owner = self.find_owner(game.players)
+        amount = monopoly_cl_interface.CLInterface(game=game).get_amount_to_buy(owner=owner, item=self.property)
+        seller_decision = monopoly_cl_interface.CLInterface(game=game).get_sell_decision(item=self.property, seller=owner, proposed_amount=amount)
+        if seller_decision:
+            self.complete_transaction(buyer=game.active_player, seller=owner, amount=amount, game=game)
+
+    def find_properties_of_other_players(self, game):
+        property_tuples = [(list(filter(lambda tile: tile.determine_if_sellable(owner=player), player.property_holdings)), player) for player in list(filter(lambda player: player != game.active_player, game.players))]
+        option_list = []
+        for n_tuple in property_tuples:
+            for tile in n_tuple[0]:
+                option_list.append(Option(option_name=f'Request to buy {tile.property.name} from {n_tuple[1].name} --- (Property deed price is {tile.property.price})', action=self.start_direct_buy_process, item_name=f'{self.property.name}'))
+        return option_list
 
     def start_auction_process(self, game, seller):
         winning_bid = monopoly_cl_interface.CLInterface(game=game).run_auction(item=self.property, seller=seller)
@@ -509,7 +525,7 @@ class OwnableTile(Tile, OwnableItem):
             a mortgaged property is auctioned.  Or if, for that matter, if a mortgaged property can be auctioned.  I'm designing to the spec that a mortgaged property
             can be auctioned and the extra 10% assessed is based off the deed price."""
             if amount + 1.1 * self.property.mortgage_price <= buyer.liquid_holdings:
-                immediate_unmortgage_decision = monopoly_cl_interface.CLInterface.get_buy_and_lift_mortgage_decision(buyer=buyer, seller=seller, amount=amount, item=self.property)
+                immediate_unmortgage_decision = monopoly_cl_interface.CLInterface(game=game).get_buy_and_lift_mortgage_decision(buyer=buyer, seller=seller, amount=amount, item=self.property)
                 if immediate_unmortgage_decision:
                     self.property.mortgaged = False
                     buyer.liquid_holdings -= 1.1 * self.property.mortgage_price
@@ -533,14 +549,16 @@ class RailRoadTile(OwnableTile):
 
     def tile_actions(self, active_player, players, dice_roll, game):
         owner = self.find_owner(players)
+        other_owned_properties = self.find_properties_of_other_players(game=game)
         if owner:
-            return self.if_owned(active_player=active_player, owner=owner, dice_roll=None, game=game)
+            if other_owned_properties:
+                return self.if_owned(active_player=active_player, owner=owner, dice_roll=None, game=game) + other_owned_properties
         else:
-            return self.if_not_owned(active_player)
+            return self.if_not_owned(active_player) + other_owned_properties
 
     def if_owned(self, active_player, owner, game, dice_roll=None):
         if active_player == owner:
-            sellability = self.determine_if_sellable(game)
+            sellability = self.determine_if_sellable(owner=active_player)
             if sellability:
                 if self.property.mortgaged:
                     if active_player.liquid_holdings >= self.property.price * 0.1:

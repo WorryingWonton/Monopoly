@@ -15,11 +15,16 @@ class CLInterface():
                 return None
             return option_list[int(selection) - 1]
 
-    def get_amount(self, item):
+    def get_amount_to_sell(self, item):
         """
         get_amount(): asks the active_player how much they'd like to sell a particular item for
             -Takes item as an input, and returns an int representing the sell price"""
         amount = int(input(f'\n{self.game.active_player.name}, how much would you like to sell {item.name} for?'))
+        return amount
+
+    def get_amount_to_buy(self, item, owner):
+        amount = int(input(f'''
+        {self.game.active_player.name}, how much would you like to offer {owner.name} for {item.name}?  '''))
         return amount
 
     def pick_eligible_buyer(self, eligible_buyers):
@@ -37,8 +42,7 @@ class CLInterface():
         buy_decision = strtobool(input(f'\n{self.game.active_player.name} would like to sell you (--{buyer.name}--) {item.name} for ${amount}.\nDo you want to buy the item for ${amount}?  Enter Yes or No:  ').lower())
         return buy_decision
 
-    @staticmethod
-    def get_buy_and_lift_mortgage_decision(item, buyer, seller, amount):
+    def get_buy_and_lift_mortgage_decision(self, item, buyer, seller, amount):
         buy_decision = strtobool(input(f'''
         {buyer.name}, you have chosen to buy {item.name} from {seller.name}.
         This property is mortgaged.  You can lift the mortgage now for an additional {0.1*item.price} over {amount}
@@ -46,6 +50,12 @@ class CLInterface():
         Unmortgaging a property at the time of purchase will save you an additional {0.1*item.price} later on as well as immediately let you charge rent and develop on {item.name}
         Do you wish to buy and lift the mortgage?  Entering No will just buy the property:  ''').lower())
         return buy_decision
+
+    def get_sell_decision(self, item, seller, proposed_amount):
+        sell_decision = strtobool(input(f'''
+        {seller.name}, {self.game.active_player.name} would like to buy {item.name} off you for ${proposed_amount}.
+        Would you like to sell for this price?  Enter Yes or No:  ''').lower())
+        return sell_decision
 
     def run_auction(self, item, seller):
         participants = list(filter(lambda player: player != seller, self.game.players))
