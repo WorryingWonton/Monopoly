@@ -64,20 +64,20 @@ class Monopoly:
         # dice_roll = HelperFunctions.roll_dice()
         # if not self.active_player.jailed:
         #     self.active_player.position += dice_roll
-        print(f'\n{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name} --- {[x.property.name for x in self.active_player.property_holdings]}')
         dice_roll = 0
         if self.turns < len(self.players):
             dice_roll += 5
         else:
             dice_roll += 10
         self.active_player.advance_position(dice_roll)
+        print(f'\n{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name} --- Pos: {self.active_player.position} ---{[x.property.name for x in self.active_player.property_holdings]}')
         option_list = []
-        tile_options = self.board[self.active_player.position].tile_actions(active_player=self.active_player, players=self.players, dice_roll=dice_roll, game=self)
+        tile_options = self.board[self.active_player.position].tile_actions(game=self)
         if tile_options:
             for tile in self.active_player.property_holdings:
                 if tile.position == self.active_player.position:
                     continue
-                options = tile.tile_actions(active_player=self.active_player, players=self.players, dice_roll=dice_roll, game=self)
+                options = tile.tile_actions(game=self)
                 if options:
                     for option in options:
                         tile_options.append(option)
@@ -420,7 +420,7 @@ class Structure:
 class Tile:
     position = attr.ib(type=int)
 
-    def tile_actions(self, active_player, players, dice_roll, game):
+    def tile_actions(self, game):
         """Performs all appropriate actions associated with the Tile object in play
             Assumes active_player is on the Tile"""
         pass
@@ -435,7 +435,7 @@ class OwnableTile(Tile, OwnableItem):
     def find_owner(self, players):
         for player in players:
             for property in player.property_holdings:
-                if property.position == self.position:
+                if property == self:
                     return player
         return None
 
@@ -476,6 +476,10 @@ class OwnableTile(Tile, OwnableItem):
         return num_tiles
 
     def determine_if_sellable(self, owner):
+        """
+        :param Player owner:  Player object who owns the tile
+        :return: Returns either an empty list or a list containing an Option object which will start the direct sale process if chosen by the player
+        """
         if self in owner.property_holdings:
             if len(self.property.existing_structures) > 0:
                 return []
@@ -509,7 +513,10 @@ class OwnableTile(Tile, OwnableItem):
         option_list = []
         for n_tuple in property_tuples:
             for tile in n_tuple[0]:
-                option_list.append(Option(option_name=f'Request to buy {tile.property.name} from {n_tuple[1].name} --- (Property deed price is {tile.property.price})', action=self.start_direct_buy_process, item_name=f'{self.property.name}'))
+                if self.property.mortgaged:
+                    option_list.append(Option(option_name=f'''Request to buy {tile.property.name} from {n_tuple[1].name} --- (Property deed price is {tile.property.price}) --- WARNING: Property IS Mortgaged''', action=self.start_direct_buy_process, item_name=f'{self.property.name}'))
+                else:
+                    option_list.append(Option(option_name=f'''Request to buy {tile.property.name} from {n_tuple[1].name} --- (Property deed price is {tile.property.price}) --- Property IS NOT Mortgaged''', action=self.start_direct_buy_process, item_name=f'{self.property.name}'))
         return option_list
 
     def start_auction_process(self, game, seller):
@@ -539,6 +546,9 @@ class OwnableTile(Tile, OwnableItem):
         buyer.property_holdings.append(self)
         seller.liquid_holdings += amount
 
+    def remove_structure(self, game):
+        pass
+
 @attr.s
 class UnownableTile(Tile):
     pass
@@ -547,18 +557,27 @@ class UnownableTile(Tile):
 @attr.s
 class RailRoadTile(OwnableTile):
 
-    def tile_actions(self, active_player, players, dice_roll, game):
-        owner = self.find_owner(players)
+    def tile_actions(self, game):
+        owner = self.find_owner(game.players)
         other_owned_properties = self.find_properties_of_other_players(game=game)
         if owner:
-            if other_owned_properties:
-                return self.if_owned(active_player=active_player, owner=owner, dice_roll=None, game=game) + other_owned_properties
+            if owner == game.active_player:
+                return self.if_owned(active_player=game.active_player, owner=owner, dice_roll=None, game=game)
+            else:
+                return self.if_owned(active_player=game.active_player, owner=owner, dice_roll=None, game=game) + other_owned_properties
         else:
-            return self.if_not_owned(active_player) + other_owned_properties
+            return self.if_not_owned(game.active_player) + other_owned_properties
 
     def if_owned(self, active_player, owner, game, dice_roll=None):
+        """
+        :param active_player:
+        :param owner:
+        :param Monopoly game:
+        :param dice_roll:
+        :return:
+        """
         if active_player == owner:
-            sellability = self.determine_if_sellable(owner=active_player)
+            sellability = self.determine_if_sellable(owner=owner)
             if sellability:
                 if self.property.mortgaged:
                     if active_player.liquid_holdings >= self.property.price * 0.1:
@@ -569,6 +588,8 @@ class RailRoadTile(OwnableTile):
                     return sellability + [Option(option_name=f'Build Transtation at {self.property.name}', action=self.build_train_station, item_name=self.property.name)]
                 else:
                     return sellability
+            else:
+                return [Option(option_name=f'Sell Trainstation at {self.property.name} to the Bank for {0.5*self.property.existing_structures[0].price}', action=self.remove_structure, item_name=self.property.existing_structures[0].type)]
         elif self.property.mortgaged:
             return []
         else:
@@ -594,6 +615,38 @@ class RailRoadTile(OwnableTile):
         if game.active_player.liquid_holdings >= self.property.possible_structures[0].price:
             game.active_player.liquid_holdings -= self.property.possible_structures[0].price
             self.property.existing_structures.append(self.property.possible_structures[0])
+
+    def remove_structure(self, game):
+        self.property.existing_structures = []
+        game.active_player.liquid_holdings += self.property.possible_structures[0].price
+
+@attr.s
+class JailTile(UnownableTile):
+
+    def tile_actions(self, player, ):
+        pass
+
+    def jailed_dice_roll(self, player):
+        if player.jailed_turns == 3:
+            dice_roll = HelperFunctions.roll_dice()
+            if dice_roll[1] == dice_roll[2]:
+                player.position += dice_roll[1] + dice_roll[2]
+            else:
+                player.position += dice_roll[1] + dice_roll[2]
+                player.jailed_turns = 0
+                player.liquid_holdings -= 50
+                player.jailed = False
+        if player.jailed_turns < 3:
+            dice_roll = HelperFunctions.roll_dice()
+            if dice_roll[1] == dice_roll[2]:
+                player.position += dice_roll[1] + dice_roll[2]
+            else:
+                player.jailed_turns += 1
+
+    def pay_fine(self, player):
+        player.liquid_holdings -= 50
+        player.position += sum(HelperFunctions.roll_dice())
+        player.jailed = False
 
 
 
@@ -653,32 +706,6 @@ class IncomeTaxTile(UnownableTile):
         else:
             player.liquid_holdings -= 200
 
-@attr.s
-class JailTile(UnownableTile):
-
-    @staticmethod
-    def jailed_dice_roll(player):
-        if player.jailed_turns == 3:
-            dice_roll = HelperFunctions.roll_dice()
-            if dice_roll[1] == dice_roll[2]:
-                player.position += dice_roll[1] + dice_roll[2]
-            else:
-                player.position += dice_roll[1] + dice_roll[2]
-                player.jailed_turns = 0
-                player.liquid_holdings -= 50
-                player.jailed = False
-        if player.jailed_turns < 3:
-            dice_roll = HelperFunctions.roll_dice()
-            if dice_roll[1] == dice_roll[2]:
-                player.position += dice_roll[1] + dice_roll[2]
-            else:
-                player.jailed_turns += 1
-
-    @staticmethod
-    def pay_fine(player):
-        player.liquid_holdings -= 50
-        player.position += sum(HelperFunctions.roll_dice())
-        player.jailed = False
 
 @attr.s
 class GoTile(UnownableTile):
