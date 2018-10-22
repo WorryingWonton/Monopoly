@@ -48,7 +48,7 @@ Pick a number from the list and press Enter:  ''')) - 1]
             -Takes an OwnableItem object, Player object, and an int representing the amount as inputs, returns True or False"""
         buy_decision = strtobool(input(f'''
 {self.game.active_player.name} would like to sell you (--{buyer.name}--) {item.name} for ${amount}. 
-Do you want to buy the item for ${amount}?  Enter Yes or No:  ').lower()'''))
+Do you want to buy the item for ${amount}?  Enter Yes or No:  ''').lower())
         return buy_decision
 
     def get_buy_and_lift_mortgage_decision(self, item, buyer, seller, amount):

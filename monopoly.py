@@ -248,6 +248,7 @@ class Card(OwnableItem):
     def complete_transaction(self, buyer, seller, amount, game):
         buyer.liquid_holdings -= amount
         if buyer.liquid_holdings < 0:
+            buyer.liquid_holdings += amount
             game.run_bankruptcy_process(creditor=seller, debtor=buyer)
             return
         seller.hand.remove(self)
@@ -439,7 +440,7 @@ class OwnableTile(Tile, OwnableItem):
                     return player
         return None
 
-    def if_owned(self, player, owner, game, dice_roll):
+    def if_owned(self, owner, game):
         pass
 
     def if_not_owned(self, active_player):
@@ -484,9 +485,14 @@ class OwnableTile(Tile, OwnableItem):
             if len(self.property.existing_structures) > 0:
                 return []
             else:
-                return [Option(option_name=f'Sell {self.property.name}', action=self.start_direct_sale_process, item_name=self.property.name)]
+                return [Option(option_name=f'Sell {self.property.name}', action=self.start_direct_sale_process, item_name=self.property.name),
+                        Option(option_name=f'Sell {self.property.name} to the Bank for {0.5 * self.property.price}', action=self.sell_to_bank, item_name=self.property.name)]
         else:
             return []
+
+    def sell_to_bank(self, game):
+        game.active_player.liquid_holdings += self.property.price * 0.5
+        game.active_player.property_holdings.remove(self)
 
     def start_direct_sale_process(self, game):
         amount = monopoly_cl_interface.CLInterface(game=game).get_amount_to_sell(item=self.property)
@@ -530,7 +536,7 @@ class OwnableTile(Tile, OwnableItem):
         if self.property.mortgaged:
             """This seems to be a grey area in the rules.  Normally, amount is just the deed price of the property, however the rules do not specify what happens if
             a mortgaged property is auctioned.  Or if, for that matter, if a mortgaged property can be auctioned.  I'm designing to the spec that a mortgaged property
-            can be auctioned and the extra 10% assessed is based off the deed price."""
+            can be auctioned and the extra 10% assessed is based off the mortgage price."""
             if amount + 1.1 * self.property.mortgage_price <= buyer.liquid_holdings:
                 immediate_unmortgage_decision = monopoly_cl_interface.CLInterface(game=game).get_buy_and_lift_mortgage_decision(buyer=buyer, seller=seller, amount=amount, item=self.property)
                 if immediate_unmortgage_decision:
@@ -562,13 +568,13 @@ class RailRoadTile(OwnableTile):
         other_owned_properties = self.find_properties_of_other_players(game=game)
         if owner:
             if owner == game.active_player:
-                return self.if_owned(active_player=game.active_player, owner=owner, dice_roll=None, game=game)
+                return self.if_owned(owner=owner, game=game)
             else:
-                return self.if_owned(active_player=game.active_player, owner=owner, dice_roll=None, game=game) + other_owned_properties
+                return self.if_owned(owner=owner, game=game) + other_owned_properties
         else:
             return self.if_not_owned(game.active_player) + other_owned_properties
 
-    def if_owned(self, active_player, owner, game, dice_roll=None):
+    def if_owned(self, owner, game):
         """
         :param active_player:
         :param owner:
@@ -576,15 +582,15 @@ class RailRoadTile(OwnableTile):
         :param dice_roll:
         :return:
         """
-        if active_player == owner:
+        if game.active_player == owner:
             sellability = self.determine_if_sellable(owner=owner)
             if sellability:
                 if self.property.mortgaged:
-                    if active_player.liquid_holdings >= self.property.price * 0.1:
+                    if game.active_player.liquid_holdings >= self.property.price * 0.1:
                         return sellability + [Option(option_name=f'Lift Mortgage on {self.property.name}', action=self.lift_mortgage, item_name=self.property.name)]
                     else:
                         return sellability + [Option(option_name=f'Mortgage {self.propert.name}', action=self.mortgage_owned_property, item_name=self.property.name)]
-                elif active_player.liquid_holdings >= self.property.possible_structures[0].price:
+                elif game.active_player.liquid_holdings >= self.property.possible_structures[0].price:
                     return sellability + [Option(option_name=f'Build Transtation at {self.property.name}', action=self.build_train_station, item_name=self.property.name)]
                 else:
                     return sellability
