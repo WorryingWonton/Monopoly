@@ -51,7 +51,7 @@ def receive_25_consultancy_fee(player):
 
 def you_are_assessed_for_street_repairs(game):
     amount_assessed = 0
-    color_tiles_with_structures = [tile for tile in game.active_player.property_holdings if len(tile.property.existing_structures) > 0 and tile.property.existing_structures[0].type != 'trainstation']
+    color_tiles_with_structures = [tile for tile in game.active_player.property_holdings if len(tile.property.existing_structures) > 0 and (tile.property.existing_structures[-1].type == 'house' or tile.property.existing_structures[-1].type == 'hotel')]
     for tile in color_tiles_with_structures:
         for structure in tile.property.existing_structures:
             if structure.type == 'hotel':
