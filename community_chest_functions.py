@@ -49,13 +49,16 @@ def pay_school_fees(player):
 def receive_25_consultancy_fee(player):
     player.liquid_holdings += 25
 
-def you_are_assessed_for_street_repairs(player):
-    for tile in player.property_holdings:
-        if len(tile.property.existing_structures) > 0:
-            if tile.property.existing_structures[-1].type == 'hotel':
-                player.liquid_holdings -= 115
-            if tile.property.existing_structures[-1].type == 'house':
-                player.liquid_holdings -= len(tile.property.existing_structures) * 40
+def you_are_assessed_for_street_repairs(game):
+    amount_assessed = 0
+    color_tiles_with_structures = [tile for tile in game.active_player.property_holdings if len(tile.property.existing_structures) > 0 and tile.property.existing_structures[0].type != 'trainstation']
+    for tile in color_tiles_with_structures:
+        for structure in tile.property.existing_structures:
+            if structure.type == 'hotel':
+                amount_assessed += 115
+            if structure.type == 'house':
+                amount_assessed += 30
+    return amount_assessed
 
 def you_have_won_second_prize_in_a_beauty_contest(player):
     player.liquid_holdings += 10

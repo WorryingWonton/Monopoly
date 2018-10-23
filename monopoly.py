@@ -41,8 +41,12 @@ class Monopoly:
         self.community_deck = Deck.build_communbity_deck()
         self.turns = 0
         self.auction_timer = 10
-        self.consecutive_doubles = 0
+        self.doubles = False
         self.bank = Bank(game=self)
+        self.dice_roll = None
+        #Test mode parameter for dice_roll
+        self.index = 0
+
 
     def add_player(self, name):
         self.players.append(Player(name, game=self))
@@ -59,17 +63,30 @@ class Monopoly:
     def active_player(self):
         return self.players[self.turns % len(self.players)]
 
-    def run_turn(self):
-        #Commented for unit tests
-        # dice_roll = HelperFunctions.roll_dice()
-        # if not self.active_player.jailed:
-        #     self.active_player.position += dice_roll
-        dice_roll = 0
+    def roll_dice(self, mode=None):
+        """
+        This function returns a 2 tuple containing 2 randomly generated integers bound between 1 and 6
+        roll_dice does NOT update the dice_roll attribute in the Monopoly class
+        :param basestring mode: A string representing one of several possible test modes
+        :var dict test_modes: A dictionary containing different test modes, to remove RNG from the game.
+        :return tuple dice_roll:
+        """
+        #First turn scenario starting from GO
         if self.turns < len(self.players):
-            dice_roll += 5
+            test_modes = {'railroads': [(2, 3), (6, 4), (6, 4), (6, 4)]}
         else:
-            dice_roll += 10
-        self.active_player.advance_position(dice_roll)
+            test_modes = {'railroads': [(6, 4), (6, 4), (6, 4), (6, 4)]}
+        if mode:
+            if self.turns % len(self.players) == 0:
+                self.index += 1
+            return test_modes[mode][self.index % len(test_modes)]
+        else:
+            return (random.randint(1, 6), random.randint(1, 6))
+
+    def run_turn(self):
+        self.dice_roll = self.roll_dice(mode='railroads')
+        self.check_for_doubles()
+        self.active_player.advance_position(amount=self.dice_roll[0] + self.dice_roll[1])
         print(f'\n{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name} --- Pos: {self.active_player.position} ---{[x.property.name for x in self.active_player.property_holdings]}')
         option_list = []
         tile_options = self.board[self.active_player.position].tile_actions(game=self)
@@ -96,14 +113,19 @@ class Monopoly:
         if active_player_decision:
             active_player_decision.action(self)
 
-    #Requries that all players that are going to participate have been added
-        #Runs until someone wins, more precisely that the number of players is wittled down to one.
-        #Returns the last remaining player
     def run_game(self):
         while len(self.players) > 1:
             self.run_turn()
-            # self.eject_bankrupt_players()
-            self.advance_turn()
+            if self.doubles:
+                self.active_player.consecutive_turns += 1
+                if self.active_player.consecutive_turns >= 3:
+                    self.turns += self.active_player.consecutive_turns
+                    self.active_player.go_directly_to_jail()
+                    self.advance_turn()
+                    self.doubles = False
+                continue
+            else:
+                self.advance_turn()
         return self.players[0]
 
     def run_bankruptcy_process(self, creditor, debtor):
@@ -134,6 +156,9 @@ class Monopoly:
         self.bank.property_holdings = []
         self.bank.hand = []
 
+    def check_for_doubles(self):
+        if self.dice_roll[0] == self.dice_roll[1]:
+            self.doubles = True
 
 #The board object is a list of Tile objects
 class Board:
@@ -151,7 +176,7 @@ class Board:
                       ColorTile(position=9, color='cyan', property=Property(name='Connecticut Avenue', price=100, mortgage_price=50, possible_structures=[Structure('house', 50, 40), Structure('house', 50, 100), Structure('house', 50, 300), Structure('house', 50, 450), Structure('hotel', 50, 600)], base_rent=8)),
                       JailTile(position=10),
                       ColorTile(position=11, color='pink', property=Property(name='St. Charles Place', price=140, mortgage_price=70, possible_structures=[Structure('house', 100, 50), Structure('house', 100, 150), Structure('house', 100, 450), Structure('house', 100, 625), Structure('hotel', 100, 750)], base_rent=10)),
-                      UtilityTile(position=12, property=Property(name='Electric Company', price=150, mortgage_price=75, possible_structures=None, base_rent=None)),
+                      UtilityTile(position=12, property=Property(name='Electric Company', price=150, mortgage_price=75, possible_structures=[], base_rent=None)),
                       ColorTile(position=13, color='pink', property=Property(name='States Avenue', price=140, mortgage_price=70, possible_structures=[Structure('house', 100, 50), Structure('house', 100, 150), Structure('house', 100, 450), Structure('house', 100, 625), Structure('hotel', 100, 750)], base_rent=10)),
                       ColorTile(position=14, color='pink', property=Property(name='Virginia Avenue', price=160, mortgage_price=80, possible_structures=[Structure('house', 100, 60), Structure('house', 100, 180), Structure('house', 100, 500), Structure('house', 100, 700), Structure('hotel', 100, 900)], base_rent=12)),
                       RailRoadTile(position=15, property=Property(name='Pennsylvania Railroad', price=200, mortgage_price=100 , possible_structures=[Structure('trainstation', 100, 50)], base_rent=25)),
@@ -167,7 +192,7 @@ class Board:
                       RailRoadTile(position=25, property=Property(name='B. & O. Railroad', price=200, mortgage_price=100 , possible_structures=[Structure('trainstation', 100, 50)], base_rent=25)),
                       ColorTile(position=26, color='yellow', property=Property(name='Atlantic Avenue', price=260, mortgage_price=130, possible_structures=[Structure('house', 150, 110), Structure('house', 150, 330), Structure('house', 150, 800), Structure('house', 150, 975), Structure('hotel', 150, 1150)], base_rent=22)),
                       ColorTile(position=27, color='yellow', property=Property(name='Ventnor Avenue', price=260, mortgage_price=130, possible_structures=[Structure('house', 150, 110), Structure('house', 150, 330), Structure('house', 150, 800), Structure('house', 150, 975), Structure('hotel', 150, 1150)], base_rent=22)),
-                      UtilityTile(position=28, property=Property(name='Water Works', price=150, mortgage_price=75, possible_structures=None, base_rent=None)),
+                      UtilityTile(position=28, property=Property(name='Water Works', price=150, mortgage_price=75, possible_structures=[], base_rent=None)),
                       ColorTile(position=29, color='yellow', property=Property(name='Marvin Gardens', price=280, mortgage_price=140, possible_structures=[Structure('house', 150, 120), Structure('house', 150, 360), Structure('house', 150, 850), Structure('house', 150, 1025), Structure('hotel', 150, 1200)], base_rent=24)),
                       GoToJailTile(position=30),
                       ColorTile(position=31, color='green', property=Property(name='Pacific Avenue', price=300, mortgage_price=150, possible_structures=[Structure('house', 200, 130), Structure('house', 200, 390), Structure('house', 200, 900), Structure('house', 200, 1100), Structure('hotel', 200, 1275)], base_rent=26)),
@@ -371,6 +396,9 @@ class Player:
             self.position += 40
         self.position = (self.position + amount) % 40
 
+    def go_directly_to_jail(self):
+        pass
+
     #TODO Move this method to the ColorTile class.
     @staticmethod
     def determine_buildable_tiles(player):
@@ -396,6 +424,9 @@ class Player:
 
     def list_cards_of_other_players(self):
         return [Option(option_name=f'Buy {card.name}', item_name=card.name, action=card.start_direct_buy_process(game=self.game)) for card in list(filter(lambda player: player != self.game.active_player and len(player.hand) > 0, self.game.players))]
+
+    def pass_go(self):
+        self.liquid_holdings += 200
 
 class Property:
 
@@ -629,7 +660,7 @@ class RailRoadTile(OwnableTile):
 @attr.s
 class JailTile(UnownableTile):
 
-    def tile_actions(self, player, ):
+    def tile_actions(self, game):
         pass
 
     def jailed_dice_roll(self, player):
@@ -653,6 +684,21 @@ class JailTile(UnownableTile):
         player.liquid_holdings -= 50
         player.position += sum(HelperFunctions.roll_dice())
         player.jailed = False
+
+@attr.s
+class CardTile(UnownableTile):
+
+    def tile_actions(self, game):
+        return []
+
+    def consume_card(self, game, dealt_card):
+        return None
+
+
+    # def draw_card(player, deck):
+    #     card = deck[-1]
+    #     card.action(player)
+
 
 
 
@@ -776,13 +822,6 @@ class ColorTile(OwnableTile):
     def remove_structures(self):
         self.property.existing_structures.remove(-1)
 
-@attr.s
-class CardTile(UnownableTile):
-
-    @staticmethod
-    def draw_card(player, deck):
-        card = deck[-1]
-        card.action(player)
 
 @attr.s
 class GoToJailTile(UnownableTile):
