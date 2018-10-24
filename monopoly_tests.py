@@ -36,29 +36,19 @@ class TestCards(unittest.TestCase):
     #If a card is holdable, and the active_player opts to hold the card, then the card will be removed from the deck, and added to the active_player's hand
     #Else: Perform the action associated with the card, and move it to the end of the card list for that particular deck.
     def test_deal_from_chance_deck(self):
-        game_instance = Monopoly()
-        game_instance.add_player('David')
-
-        # chance_deck = Deck.build_chance_deck()
-        # active_player = Player('David', game=None)
-        # chance_deck.deal_from_deck(active_player)
-        # self.assertEqual(1700, active_player.liquid_holdings)
-        # active_player.liquid_holdings -= 200
-        # self.assertEqual(16, len(chance_deck.cards))
-        # self.assertEqual('Advance to Go', chance_deck.cards[-1].face)
+        chance_deck = ChanceDeck()
+        player = Player('David', game=None)
+        chance_deck.deal_from_deck(active_player=player)
+        self.assertEqual(advance_to_go, player.dealt_card.action)
+        self.assertEqual(15, len(chance_deck.cards))
 
     #nonconsumable cards, verify that the cards advance to the back of the deck when used, and that their associated actions are performed on a given Player object
     def test_deal_from_community_deck(self):
-        community_deck = Deck.build_communbity_deck()
+        community_deck = CommunityChest()
         active_player = Player('Sara', game=None)
-        community_deck.deal_from_deck(active_player)
-        self.assertEqual(1700, active_player.liquid_holdings)
-        self.assertEqual('Advance to Go', community_deck.cards[-1].face)
-        self.assertEqual(16, len(community_deck.cards))
-        community_deck.deal_from_deck(active_player)
-        self.assertEqual(1950, active_player.liquid_holdings)
-        self.assertEqual('Bank error in your favor', community_deck.cards[-1].face)
-        self.assertEqual('Doctor\'s fees', community_deck.cards[0].face)
+        community_deck.deal_from_deck(active_player=active_player)
+        self.assertEqual(advance_to_go, active_player.dealt_card.action)
+        self.assertEqual(15, len(community_deck.cards))
 
     #Verify that a card can be dealt, then consumed and restored to its respective deck
     def test_deal_single_consumable_card(self):

@@ -185,6 +185,9 @@ class Board:
 
 class OwnableItem:
 
+    def find_owner(self, game):
+        pass
+
     def start_direct_sale_process(self, game):
         """Takes an instance of the item and the active_player, makes a series of interface calls to handle the sale of a property.
             -This method returns None
@@ -231,6 +234,12 @@ class Card(OwnableItem):
         self.passes_go = passes_go
         self.parent_deck = parent_deck
 
+    def find_owner(self, game):
+        for player in game.players:
+            for card in player.hand:
+                if card == self:
+                    return player
+
     def start_direct_sale_process(self, game):
         amount = monopoly_cl_interface.CLInterface(game=game).get_amount_to_sell(self)
         eligible_buyers = self.find_eligible_buyers(game=game, amount=amount)
@@ -245,7 +254,11 @@ class Card(OwnableItem):
             self.start_auction_process(game=game, seller=game.active_player)
 
     def start_direct_buy_process(self, game):
-        pass
+        owner = self.find_owner(game=game)
+        amount = monopoly_cl_interface.CLInterface(game=game).get_amount_to_buy(item=self, owner=owner)
+        seller_decision = monopoly_cl_interface.CLInterface(game=game).get_sell_decision(item=self, proposed_amount=amount, seller=owner)
+        if seller_decision:
+            self.complete_transaction(buyer=game.active_player, seller=owner, amount=amount, game=game)
 
     def complete_transaction(self, buyer, seller, amount, game):
         buyer.liquid_holdings -= amount
@@ -265,6 +278,15 @@ class Card(OwnableItem):
             else:
                 self.complete_transaction(buyer=winning_bid[0], seller=game.active_player, amount=winning_bid[1], game=game)
 
+    def consume_card(self, game):
+        self.action(game=game)
+        if self.parent_deck == 'Chance Deck':
+            game.chance_deck.append(self)
+        elif self.parent_deck == 'Community Chest':
+            game.community_chest.append(self)
+        else:
+            raise Exception(f'{self.name} does not have a recognized parent deck.')
+
 @attr.s
 class Deck:
     cards = attr.ib(factory=list)
@@ -277,31 +299,30 @@ class Deck:
         card = self.cards[0]
         if card.holdable:
             active_player.hand.append(card)
-            self.cards.remove(card)
         else:
             active_player.dealt_card = card
-            del self.cards[0]
-            self.cards.append(card)
+        self.cards.remove(card)
 
 @attr.s
 class ChanceDeck(Deck):
     name = attr.ib(default='Chance Deck')
-    cards = attr.ib(default=[Card(name='Advance to Go', action=advance_to_go, holdable=False, passes_go=False, parent_deck=name),
-             Card(name='Advance to Illinois Ave.', action=advance_to_illinois_ave, holdable=False, passes_go=True, parent_deck=name),
-             Card(name='Advance to St. Charles Place', action=advance_to_st_charles_place, holdable=False, passes_go=True, parent_deck=name),
-             Card(name='Advance token to nearest Utility', action=advance_to_nearest_utility, holdable=False, passes_go=False, parent_deck=name),
-             Card(name='Advance token to the nearest Railroad', action=advance_token_to_nearset_railroad, holdable=False, passes_go=False, parent_deck=name),
-             Card(name='Bank pays you dividend of $50', action=bank_pays_you_50_dividend, holdable=False, passes_go=False, parent_deck=name),
-             Card(name='Get out of Jail Free', action=get_out_jail_free, holdable=True, passes_go=False, parent_deck=name),
-             Card(name='Go back 3 Spaces', action=go_back_3_spaces, holdable=False, passes_go=False, parent_deck=name),
-             Card(name='Go to Jail', action=go_to_jail, holdable=False, passes_go=False, parent_deck=name),
-             Card(name='Make general repairs on all your property', action=make_general_repairs_on_all_property, holdable=False, passes_go=False, parent_deck=name),
-             Card(name='Pay poor tax of $15', action=pay_poor_tax, holdable=False, passes_go=False, parent_deck=name),
-             Card(name='Take a trip to Reading Railroad', action=take_trip_to_reading_railroad, holdable=False, passes_go=True, parent_deck=name),
-             Card(name='Take a walk on the Boardwalk', action=take_a_walk_on_boardwalk, holdable=False, passes_go=False, parent_deck=name),
-             Card(name='You have been elected Chairman of the Board', action=chairman_of_the_board, holdable=False, passes_go=False, parent_deck=name),
-             Card(name='Your building loan matures', action=your_building_loan_matures, holdable=False, passes_go=False, parent_deck=name),
-             Card(name='You have won a crossword competition', action=you_have_won_a_crossword_competition, holdable=False, passes_go=False, parent_deck=name)])
+    cards = attr.ib(default=[
+            Card(name='Advance to Go', action=advance_to_go, holdable=False, passes_go=False, parent_deck=name),
+            Card(name='Advance to Illinois Ave.', action=advance_to_illinois_ave, holdable=False, passes_go=True, parent_deck=name),
+            Card(name='Advance to St. Charles Place', action=advance_to_st_charles_place, holdable=False, passes_go=True, parent_deck=name),
+            Card(name='Advance token to nearest Utility', action=advance_to_nearest_utility, holdable=False, passes_go=False, parent_deck=name),
+            Card(name='Advance token to the nearest Railroad', action=advance_token_to_nearset_railroad, holdable=False, passes_go=False, parent_deck=name),
+            Card(name='Bank pays you dividend of $50', action=bank_pays_you_50_dividend, holdable=False, passes_go=False, parent_deck=name),
+            Card(name='Get out of Jail Free', action=get_out_jail_free, holdable=True, passes_go=False, parent_deck=name),
+            Card(name='Go back 3 Spaces', action=go_back_3_spaces, holdable=False, passes_go=False, parent_deck=name),
+            Card(name='Go to Jail', action=go_to_jail, holdable=False, passes_go=False, parent_deck=name),
+            Card(name='Make general repairs on all your property', action=make_general_repairs_on_all_property, holdable=False, passes_go=False, parent_deck=name),
+            Card(name='Pay poor tax of $15', action=pay_poor_tax, holdable=False, passes_go=False, parent_deck=name),
+            Card(name='Take a trip to Reading Railroad', action=take_trip_to_reading_railroad, holdable=False, passes_go=True, parent_deck=name),
+            Card(name='Take a walk on the Boardwalk', action=take_a_walk_on_boardwalk, holdable=False, passes_go=False, parent_deck=name),
+            Card(name='You have been elected Chairman of the Board', action=chairman_of_the_board, holdable=False, passes_go=False, parent_deck=name),
+            Card(name='Your building loan matures', action=your_building_loan_matures, holdable=False, passes_go=False, parent_deck=name),
+            Card(name='You have won a crossword competition', action=you_have_won_a_crossword_competition, holdable=False, passes_go=False, parent_deck=name)])
 
 @attr.s
 class CommunityChest(Deck):
@@ -657,7 +678,7 @@ class JailTile(UnownableTile):
                 game.active_player.advance_position(amount=sum(dice_roll))
                 return game.board[game.active_player.position].tile_actions(game=game)
             if game.active_player.liquid_holdings >= 50:
-                option_list.append(Option(f'Pay Jail Fine ($50)', item_name=None, action=game.active_player.pay_jail_fine))
+                option_list.append(Option(option_name='Pay Jail Fine ($50)', item_name=None, action=game.active_player.pay_jail_fine))
             for card in game.active_player.hand:
                 if card.name == 'Get out of Jail Free':
                     option_list.append(Option(option_name=f'Use {card.name} card from {card.parent_deck}', action=card.action, item_name=card.name))
@@ -674,12 +695,56 @@ class CardTile(UnownableTile):
     def consume_card(self, game, dealt_card):
         return None
 
+@attr.s
+class ChanceTile(CardTile):
+    pass
+
+@attr.s
+class CommunityChestTile(CardTile):
+    pass
 
     # def draw_card(player, deck):
     #     card = deck[-1]
     #     card.action(player)
 
+@attr.s
+class GoToJailTile(UnownableTile):
 
+    @staticmethod
+    def go_to_jail(player):
+        player.jailed = True
+        player.position = 10
+
+@attr.s
+class LuxuryTaxTile(UnownableTile):
+
+    @staticmethod
+    def pay_luxury_tax(player):
+        player.liquid_holdings -= 75
+
+#This Tile does nothing, however it is the only Tile which truly does nothing, therefore it gets its own class
+@attr.s
+class FreeParking(Tile):
+    pass
+
+#Tax, Jail, Card, and Go Tiles cannot be purchased
+@attr.s
+class IncomeTaxTile(UnownableTile):
+
+    @staticmethod
+    def deduct_taxes(player):
+        gross_worth = player.find_gross_worth()
+        if gross_worth <= 2000:
+            player.liquid_holdings -= .1 * gross_worth
+        else:
+            player.liquid_holdings -= 200
+
+@attr.s
+class GoTile(UnownableTile):
+
+    @staticmethod
+    def give_funds(player):
+        player.liquid_holdings += 200
 
 
 
@@ -726,25 +791,7 @@ class UtilityTile(OwnableTile):
                 player.liquid_holdings -= sum(dice_roll) * 10
 
 
-#Tax, Jail, Card, and Go Tiles cannot be purchased
-@attr.s
-class IncomeTaxTile(UnownableTile):
 
-    @staticmethod
-    def deduct_taxes(player):
-        gross_worth = player.find_gross_worth()
-        if gross_worth <= 2000:
-            player.liquid_holdings -= .1 * gross_worth
-        else:
-            player.liquid_holdings -= 200
-
-
-@attr.s
-class GoTile(UnownableTile):
-
-    @staticmethod
-    def give_funds(player):
-        player.liquid_holdings += 200
 
 @attr.s
 class ColorTile(OwnableTile):
@@ -803,25 +850,7 @@ class ColorTile(OwnableTile):
         self.property.existing_structures.remove(-1)
 
 
-@attr.s
-class GoToJailTile(UnownableTile):
 
-    @staticmethod
-    def go_to_jail(player):
-        player.jailed = True
-        player.position = 10
-
-@attr.s
-class LuxuryTaxTile(UnownableTile):
-
-    @staticmethod
-    def pay_luxury_tax(player):
-        player.liquid_holdings -= 75
-
-#This Tile does nothing, however it is the only Tile which truly does nothing, therefore it gets its own class
-@attr.s
-class FreeParking(Tile):
-    pass
 
 
 
