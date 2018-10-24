@@ -111,7 +111,6 @@ class TestSingleTurn(unittest.TestCase):
         game_instance.add_player('Sallie')
         game_instance.add_player('Michelle')
         # game_instance.players[0].hand.append(Card(name='Get out of Jail Free', action=get_out_jail_free, holdable=True, passes_go=False))
-        game_instance.players[0].hand.append(CommunityChest().cards[4])
         result = game_instance.run_game()
         # self.assertEqual('David', result.name)
 

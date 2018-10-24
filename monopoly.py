@@ -11,8 +11,8 @@ class Monopoly:
     def __init__(self):
         self.players = []
         self.board = Board().board
-        self.chance_deck = ChanceDeck().cards
-        self.community_deck = CommunityChest().cards
+        self.chance_deck = ChanceDeck()
+        self.community_deck = CommunityChest()
         self.turns = 0
         self.auction_timer = 10
         self.doubles = False
@@ -58,7 +58,7 @@ class Monopoly:
             return (random.randint(1, 6), random.randint(1, 6))
 
     def run_turn(self):
-        self.dice_roll = self.roll_dice(mode='railroads')
+        self.dice_roll = self.roll_dice()
         self.check_for_doubles()
         if self.active_player.jailed:
             pass
@@ -297,12 +297,12 @@ class Deck:
         random.shuffle(self.cards)
 
     #Cards are read from the top of each deck, and re-inserted at the bottom their action is performed
-    def deal_from_deck(self, active_player):
+    def deal_from_deck(self, game):
         card = self.cards[0]
         if card.holdable:
-            active_player.hand.append(card)
+            game.active_player.hand.append(card)
         else:
-            active_player.dealt_card = card
+            game.active_player.dealt_card = card
         self.cards.remove(card)
 
 @attr.s
@@ -682,16 +682,16 @@ class CardTile(UnownableTile):
 class ChanceTile(CardTile):
 
     def tile_actions(self, game):
-        game.chance_deck.deal_from_deck()
-        game.active_player.dealt_card.consume_card()
+        game.chance_deck.deal_from_deck(game=game)
+        game.active_player.dealt_card.consume_card(game=game)
         return []
 
 @attr.s
 class CommunityChestTile(CardTile):
 
     def tile_actions(self, game):
-        game.community_deck.deal_from_deck()
-        game.active_player.dealt_card.consume_card()
+        game.community_deck.deal_from_deck(game=game)
+        game.active_player.dealt_card.consume_card(game=game)
         return []
 
 @attr.s
