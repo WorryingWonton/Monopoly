@@ -590,6 +590,9 @@ class OwnableTile(Tile, OwnableItem):
     def remove_structure(self, game):
         pass
 
+    def assess_rent(self, owner, game):
+        pass
+
 @attr.s
 class UnownableTile(Tile):
     pass
@@ -679,6 +682,7 @@ class JailTile(UnownableTile):
         if game.active_player.jailed_turns < 3:
             if dice_roll[0] == dice_roll[1]:
                 game.active_player.advance_position(amount=sum(dice_roll))
+                game.dice_roll = dice_roll
                 return game.board[game.active_player.position].tile_actions(game=game)
             if game.active_player.liquid_holdings >= 50:
                 option_list.append(Option(option_name='Pay Jail Fine ($50)', item_name=None, action=game.active_player.pay_jail_fine))
@@ -747,47 +751,31 @@ class GoTile(UnownableTile):
         game.active_player.pass_go()
         return []
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#This gets a bit weird...  So I need to know the size of the dice roll that caused the player to land on this tile
 @attr.s
 class UtilityTile(OwnableTile):
 
-    def if_owned(self, player, owner, dice_roll):
+    def tile_actions(self, game):
+        owner = self.find_owner(players=game.players)
+        if owner:
+            if owner == game.active_player:
+                return self.determine_if_sellable(owner=owner)
+            else:
+                if self.property.mortgaged:
+                    return []
+                else:
+                    self.assess_rent(game=game, owner=owner)
+                    return []
+        else:
+            return self.if_not_owned(active_player=game.active_player)
+
+    def assess_rent(self, owner, game):
         num_owned_utilites = self.count_similar_owned_properties(owner)
         if num_owned_utilites == 1:
-            if self.property.mortgaged:
-                player.liquid_holdings -= sum(dice_roll) * 4
-            else:
-                owner.liquid_holdings += sum(dice_roll) * 4
-                player.liquid_holdings -= sum(dice_roll) * 4
+            owner.liquid_holdings += sum(game.dice_roll) * 4
+            game.active_player.liquid_holdings -= sum(game.dice_roll) * 4
         if num_owned_utilites == 2:
-            if self.property.mortgaged:
-                player.liquid_holdings -= sum(dice_roll) * 10
-            else:
-                owner.liquid_holdings += sum(dice_roll) * 10
-                player.liquid_holdings -= sum(dice_roll) * 10
+            owner.liquid_holdings += sum(game.dice_roll) * 10
+            game.active_player.liquid_holdings -= sum(game.dice_roll) * 10
 
 
 
