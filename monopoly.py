@@ -3,6 +3,7 @@ from chance_deck_functions import *
 import attr
 import monopoly_cl_interface
 import random
+from functools import reduce
 
 class Monopoly:
 
@@ -143,12 +144,12 @@ class Board:
     def __init__(self):
         self.board = [GoTile(position=0),
                       ColorTile(position=1, color='brown', property=Property(name='Mediterranean Avenue', price=60, mortgage_price=30, possible_structures=[Structure('house', 50, 10), Structure('house', 50, 30), Structure('house', 50, 90), Structure('house', 50, 160), Structure('hotel', 50, 250)], base_rent=2)),
-                      CardTile(position=2),
+                      CommunityChestTile(position=2),
                       ColorTile(position=3, color='brown', property=Property(name='Baltic Avenue', price=60, mortgage_price=30, possible_structures=[Structure('house', 50, 20), Structure('house', 50, 60), Structure('house', 50, 180), Structure('house', 50, 320), Structure('hotel', 50, 450)], base_rent=4)),
                       IncomeTaxTile(position=4),
                       RailRoadTile(position=5, property=Property(name='Reading Railroad', price=200, mortgage_price=100 , possible_structures=[Structure('trainstation', 100, 50)], base_rent=25)),
                       ColorTile(position=6, color='cyan', property=Property(name='Oriental Avenue', price=100, mortgage_price=50, possible_structures=[Structure('house', 50, 30), Structure('house', 50, 90), Structure('house', 50, 270), Structure('house', 50, 400), Structure('hotel', 50, 550)], base_rent=6)),
-                      CardTile(position=7),
+                      ChanceTile(position=7),
                       ColorTile(position=8, color='cyan', property=Property(name='Vermont Avenue', price=100, mortgage_price=50, possible_structures=[Structure('house', 50, 30), Structure('house', 50, 90), Structure('house', 50, 270), Structure('house', 50, 400), Structure('hotel', 50, 550)], base_rent=6)),
                       ColorTile(position=9, color='cyan', property=Property(name='Connecticut Avenue', price=100, mortgage_price=50, possible_structures=[Structure('house', 50, 40), Structure('house', 50, 100), Structure('house', 50, 300), Structure('house', 50, 450), Structure('hotel', 50, 600)], base_rent=8)),
                       JailTile(position=10),
@@ -158,12 +159,12 @@ class Board:
                       ColorTile(position=14, color='pink', property=Property(name='Virginia Avenue', price=160, mortgage_price=80, possible_structures=[Structure('house', 100, 60), Structure('house', 100, 180), Structure('house', 100, 500), Structure('house', 100, 700), Structure('hotel', 100, 900)], base_rent=12)),
                       RailRoadTile(position=15, property=Property(name='Pennsylvania Railroad', price=200, mortgage_price=100 , possible_structures=[Structure('trainstation', 100, 50)], base_rent=25)),
                       ColorTile(position=16, color='orange', property=Property(name='St. James Place', price=180, mortgage_price=90, possible_structures=[Structure('house', 100, 70), Structure('house', 100, 200), Structure('house', 100, 550), Structure('house', 100, 750), Structure('hotel', 100, 950)], base_rent=14)),
-                      CardTile(position=17),
+                      CommunityChestTile(position=17),
                       ColorTile(position=18, color='orange', property=Property(name='Tennessee Avenue', price=180, mortgage_price=90, possible_structures=[Structure('house', 100, 70), Structure('house', 100, 200), Structure('house', 100, 550), Structure('house', 100, 750), Structure('hotel', 100, 950)], base_rent=14)),
                       ColorTile(position=19, color='orange', property=Property(name='New York Avenue', price=200, mortgage_price=100, possible_structures=[Structure('house', 100, 80), Structure('house', 100, 220), Structure('house', 100, 600), Structure('house', 100, 800), Structure('hotel', 100, 1000)], base_rent=16)),
                       FreeParking(position=20),
                       ColorTile(position=21, color='red', property=Property(name='Kentucky Avenue', price=220, mortgage_price=110, possible_structures=[Structure('house', 150, 90), Structure('house', 150, 250), Structure('house', 150, 700), Structure('house', 150, 875), Structure('hotel', 150, 1050)], base_rent=18)),
-                      CardTile(position=22),
+                      ChanceTile(position=22),
                       ColorTile(position=23, color='red', property=Property(name='Indiana Avenue', price=220, mortgage_price=110, possible_structures=[Structure('house', 150, 90), Structure('house', 150, 250), Structure('house', 150, 700), Structure('house', 150, 875), Structure('hotel', 150, 1050)], base_rent=18)),
                       ColorTile(position=24, color='red', property=Property(name='Illinois Avenue', price=240, mortgage_price=120, possible_structures=[Structure('house', 150, 100), Structure('house', 150, 300), Structure('house', 150, 750), Structure('house', 150, 925), Structure('hotel', 150, 1100)], base_rent=20)),
                       RailRoadTile(position=25, property=Property(name='B. & O. Railroad', price=200, mortgage_price=100 , possible_structures=[Structure('trainstation', 100, 50)], base_rent=25)),
@@ -174,10 +175,10 @@ class Board:
                       GoToJailTile(position=30),
                       ColorTile(position=31, color='green', property=Property(name='Pacific Avenue', price=300, mortgage_price=150, possible_structures=[Structure('house', 200, 130), Structure('house', 200, 390), Structure('house', 200, 900), Structure('house', 200, 1100), Structure('hotel', 200, 1275)], base_rent=26)),
                       ColorTile(position=32, color='green', property=Property(name='North Carolina Avenue', price=300, mortgage_price=150, possible_structures=[Structure('house', 200, 130), Structure('house', 200, 390), Structure('house', 200, 900), Structure('house', 200, 1100), Structure('hotel', 150, 1275)], base_rent=26)),
-                      CardTile(position=33),
+                      CommunityChestTile(position=33),
                       ColorTile(position=34, color='green', property=Property(name='Pennsylvania Avenue', price=320, mortgage_price=150, possible_structures=[Structure('house', 200, 150), Structure('house', 200, 450), Structure('house', 200, 1000), Structure('house', 200, 1200), Structure('hotel', 200, 1400)], base_rent=28)),
                       RailRoadTile(position=35, property=Property(name='Short Line', price=200, mortgage_price=100 , possible_structures=[Structure('trainstation', 100, 50)], base_rent=25)),
-                      CardTile(position=36),
+                      ChanceTile(position=36),
                       ColorTile(position=37, color='blue', property=Property(name='Park Place', price=350, mortgage_price=175, possible_structures=[Structure('house', 200, 175), Structure('house', 200, 500), Structure('house', 200, 1100), Structure('house', 200, 1300), Structure('hotel', 200, 1500)], base_rent=35)),
                       LuxuryTaxTile(position=38),
                       ColorTile(position=39, color='blue', property=Property(name='Boardwalk', price=400, mortgage_price=200, possible_structures=[Structure('house', 200, 200), Structure('house', 200, 600), Structure('house', 200, 1400), Structure('house', 200, 1700), Structure('hotel', 200, 2000)], base_rent=50)),
@@ -327,7 +328,8 @@ class ChanceDeck(Deck):
 @attr.s
 class CommunityChest(Deck):
     name = attr.ib(default='Community Chest')
-    cards = attr.ib(default=[Card(name='Advance to Go', action=advance_to_go, holdable=False, passes_go=False, parent_deck=name),
+    cards = attr.ib(default=[
+              Card(name='Advance to Go', action=advance_to_go, holdable=False, passes_go=False, parent_deck=name),
               Card(name='Bank error in your favor', action=bank_error_in_your_favor, holdable=False, passes_go=False, parent_deck=name),
               Card(name='Doctor\'s fees', action=doctors_fee, holdable=False, passes_go=False, parent_deck=name),
               Card(name='From sale of stock you get $50', action=from_sale_of_stock_50, holdable=False, passes_go=False, parent_deck=name),
@@ -386,6 +388,8 @@ class Player:
     def advance_position(self, amount):
         if self.position + amount < 0:
             self.position += 40
+            if not self.jailed:
+                self.pass_go()
         self.position = (self.position + amount) % 40
 
     def go_directly_to_jail(self):
@@ -419,12 +423,11 @@ class Player:
     def generate_card_options(self):
         card_options = []
         for card in self.hand:
-            card_options.append(Option(item_name=card.name, action=card.action, option_name=f'Use {card.name}'))
             card_options.append(Option(item_name=card.name, action=card.start_direct_sale_process, option_name=f'Sell {card.name}'))
         return card_options + self.list_cards_of_other_players()
 
     def list_cards_of_other_players(self):
-        return [Option(option_name=f'Buy {card.name}', item_name=card.name, action=card.start_direct_buy_process(game=self.game)) for card in list(filter(lambda player: player != self.game.active_player and len(player.hand) > 0, self.game.players))]
+        return [Option(option_name=f'Buy {card.name} from {card.find_owner(game=self.game).name}', item_name=card.name, action=card.start_direct_buy_process) for card in reduce(lambda card, next_card: card + next_card, [player.hand for player in list(filter(lambda player: player != self.game.active_player and len(player.hand) > 0, self.game.players))], [])]
 
     def pass_go(self):
         self.liquid_holdings += 200
@@ -456,7 +459,7 @@ class Tile:
     def tile_actions(self, game):
         """Performs all appropriate actions associated with the Tile object in play
             Assumes active_player is on the Tile"""
-        pass
+        return []
 
 
 #Should be able to tell if the property on the Tile is on the market, how many like tiles the Owner of the landed on tile has, determine if the Tile can be sold (I think this may be unique to color tiles)
@@ -688,65 +691,61 @@ class JailTile(UnownableTile):
 
 @attr.s
 class CardTile(UnownableTile):
-
-    def tile_actions(self, game):
-        return []
-
-    def consume_card(self, game, dealt_card):
-        return None
+    pass
 
 @attr.s
 class ChanceTile(CardTile):
-    pass
+
+    def tile_actions(self, game):
+        game.chance_deck.deal_from_deck()
+        game.active_player.dealt_card.consume_card()
+        return []
 
 @attr.s
 class CommunityChestTile(CardTile):
-    pass
 
-    # def draw_card(player, deck):
-    #     card = deck[-1]
-    #     card.action(player)
+    def tile_actions(self, game):
+        game.community_deck.deal_from_deck()
+        game.active_player.dealt_card.consume_card()
+        return []
 
 @attr.s
 class GoToJailTile(UnownableTile):
 
-    @staticmethod
-    def go_to_jail(player):
-        player.jailed = True
-        player.position = 10
+    def tile_actions(self, game):
+        game.active_player.go_directly_to_jail()
+        return []
 
 @attr.s
 class LuxuryTaxTile(UnownableTile):
 
-    @staticmethod
-    def pay_luxury_tax(player):
-        player.liquid_holdings -= 75
+    def tile_actions(self, game):
+        if game.active_player.liquid_holdings >= 75:
+            game.active_player.liquid_holdings -= 75
+        else:
+            game.run_bankruptcy_process(creditor=game.bank, debtor=game.active_player)
+        return []
 
-#This Tile does nothing, however it is the only Tile which truly does nothing, therefore it gets its own class
 @attr.s
 class FreeParking(Tile):
     pass
 
-#Tax, Jail, Card, and Go Tiles cannot be purchased
 @attr.s
 class IncomeTaxTile(UnownableTile):
 
-    @staticmethod
-    def deduct_taxes(player):
-        gross_worth = player.find_gross_worth()
+    def tile_actions(self, game):
+        gross_worth = game.active_player.find_gross_worth()
         if gross_worth <= 2000:
-            player.liquid_holdings -= .1 * gross_worth
+            game.active_player.liquid_holdings -= .1 * gross_worth
         else:
-            player.liquid_holdings -= 200
-
+            game.active_player.liquid_holdings -= 200
+        return []
 @attr.s
 class GoTile(UnownableTile):
 
-    @staticmethod
-    def give_funds(player):
-        player.liquid_holdings += 200
-
-
+    def tile_actions(self, game):
+        game.active_player.pass_go()
+        return []
 
 
 
