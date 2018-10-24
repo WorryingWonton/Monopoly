@@ -67,6 +67,7 @@ class Monopoly:
         print(f'\n{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name} --- Pos: {self.active_player.position} ---{[x.property.name for x in self.active_player.property_holdings]}')
         option_list = []
         tile_options = self.board[self.active_player.position].tile_actions(game=self)
+        tile_options += self.board[self.active_player.position].find_properties_of_other_players(game=self)
         if tile_options:
             for tile in self.active_player.property_holdings:
                 if tile.position == self.active_player.position:
@@ -228,7 +229,7 @@ class Option:
 
 
 class Card(OwnableItem):
-    def __init__(self, name, action, holdable, passes_go, parent_deck=None):
+    def __init__(self, name, action, holdable, passes_go, parent_deck):
         self.name = name
         self.action = action
         self.holdable = holdable
@@ -461,11 +462,29 @@ class Tile:
             Assumes active_player is on the Tile"""
         return []
 
+    def find_properties_of_other_players(self, game):
+        property_tuples = [(list(filter(lambda tile: tile.determine_if_sellable(owner=player), player.property_holdings)), player) for player in list(filter(lambda player: player != game.active_player, game.players))]
+        option_list = []
+        for n_tuple in property_tuples:
+            for tile in n_tuple[0]:
+                if tile.property.mortgaged:
+                    option_list.append(Option(option_name=f'''Request to buy {tile.property.name} from {n_tuple[1].name} --- (Property deed price is {tile.property.price}) --- WARNING: Property IS Mortgaged''', action=self.start_direct_buy_process, item_name=f'{self.property.name}'))
+                else:
+                    option_list.append(Option(option_name=f'''Request to buy {tile.property.name} from {n_tuple[1].name} --- (Property deed price is {tile.property.price}) --- Property IS NOT Mortgaged''', action=self.start_direct_buy_process, item_name=f'{self.property.name}'))
+        return option_list
+
 
 #Should be able to tell if the property on the Tile is on the market, how many like tiles the Owner of the landed on tile has, determine if the Tile can be sold (I think this may be unique to color tiles)
 @attr.s
 class OwnableTile(Tile, OwnableItem):
     property: Property = attr.ib()
+
+    def tile_actions(self, game):
+        owner = self.find_owner(players=game.players)
+        if owner:
+            return self.if_owned(owner=owner, game=game)
+        else:
+            return self.if_not_owned(active_player=game.active_player)
 
     #Find owner of tile occupied by the active_player, if no owner, return None
     def find_owner(self, players):
@@ -549,17 +568,6 @@ class OwnableTile(Tile, OwnableItem):
         if seller_decision:
             self.complete_transaction(buyer=game.active_player, seller=owner, amount=amount, game=game)
 
-    def find_properties_of_other_players(self, game):
-        property_tuples = [(list(filter(lambda tile: tile.determine_if_sellable(owner=player), player.property_holdings)), player) for player in list(filter(lambda player: player != game.active_player, game.players))]
-        option_list = []
-        for n_tuple in property_tuples:
-            for tile in n_tuple[0]:
-                if self.property.mortgaged:
-                    option_list.append(Option(option_name=f'''Request to buy {tile.property.name} from {n_tuple[1].name} --- (Property deed price is {tile.property.price}) --- WARNING: Property IS Mortgaged''', action=self.start_direct_buy_process, item_name=f'{self.property.name}'))
-                else:
-                    option_list.append(Option(option_name=f'''Request to buy {tile.property.name} from {n_tuple[1].name} --- (Property deed price is {tile.property.price}) --- Property IS NOT Mortgaged''', action=self.start_direct_buy_process, item_name=f'{self.property.name}'))
-        return option_list
-
     def start_auction_process(self, game, seller):
         winning_bid = monopoly_cl_interface.CLInterface(game=game).run_auction(item=self.property, seller=seller)
         if winning_bid:
@@ -600,17 +608,6 @@ class UnownableTile(Tile):
 #tile_actions() needs to determine the Tile's state, perform automatic actions on the active_player as a function of that state, and return a list of options the player can choose from
 @attr.s
 class RailRoadTile(OwnableTile):
-
-    def tile_actions(self, game):
-        owner = self.find_owner(game.players)
-        other_owned_properties = self.find_properties_of_other_players(game=game)
-        if owner:
-            if owner == game.active_player:
-                return self.if_owned(owner=owner, game=game)
-            else:
-                return self.if_owned(owner=owner, game=game) + other_owned_properties
-        else:
-            return self.if_not_owned(game.active_player) + other_owned_properties
 
     def if_owned(self, owner, game):
         """
@@ -754,19 +751,14 @@ class GoTile(UnownableTile):
 @attr.s
 class UtilityTile(OwnableTile):
 
-    def tile_actions(self, game):
-        owner = self.find_owner(players=game.players)
-        if owner:
-            if owner == game.active_player:
-                return self.determine_if_sellable(owner=owner)
-            else:
-                if self.property.mortgaged:
-                    return []
-                else:
-                    self.assess_rent(game=game, owner=owner)
-                    return []
+    def if_owned(self, owner, game):
+        if owner == game.active_player:
+            return self.determine_if_sellable(owner=owner)
+        elif self.property.mortgaged:
+            return []
         else:
-            return self.if_not_owned(active_player=game.active_player)
+            self.assess_rent(owner=owner, game=game)
+            return []
 
     def assess_rent(self, owner, game):
         num_owned_utilites = self.count_similar_owned_properties(owner)
@@ -778,63 +770,62 @@ class UtilityTile(OwnableTile):
             game.active_player.liquid_holdings -= sum(game.dice_roll) * 10
 
 
-
-
 @attr.s
 class ColorTile(OwnableTile):
     color = attr.ib(type=str)
-    #Determine how many tiles the owner of this tile has, determine the number of structures on this tile, determine if mortgaged, deduct rent
-    def if_owned(self, player, owner, dice_roll=None):
-        rent = self.assess_rent(owner)
-        player.liquid_holdings -= rent
-        if not self.property.mortgaged:
-            owner.liquid_holdings += rent
 
-    def assess_rent(self, owner):
-        if self.color in owner.determine_buildable_tiles():
-            #Structures Case
-            if len(self.property.existing_structures) > 1:
-                return self.property.existing_structures[-1].rent
-            #Monopoly case (But not yet any structures)
-            else:
-                return self.property.base_rent * 2
-        #Base case
-        else:
-            return self.property.base_rent
-
-    #If possible, returns the next buildable structure object from the Tile's list of possible structure
-    #add_or_remove = boolean for if the method is being called to add or remove a structure
-    def build_evenly(self, player, add_structure):
-        if len(self.property.existing_structures) == 0:
-            if add_structure:
-                return self.property.possible_structures[0]
-            else:
-                return None
-        else:
-            struct_count = [len(x.property.existing_structrues) for x in filter(lambda x: x.color == self.color, player.property_holdings)]
-            if max(struct_count) - min(struct_count) > 1:
-                raise Exception(f'The difference between the minimum and maximum number of structures on the {self.color} tiles has exceeded 1.  Min: {min(struct_count)} Max: {max(struct_count)}')
-
-            elif add_structure and len(self.property.existing_structures) == min(struct_count) and min(struct_count) != max(struct_count):
-                return self.property.possible_structures[min(struct_count)]
-            elif len(self.property.existing_structures) == max(struct_count):
-                return self.property.existing_structures[-1]
-            else:
-                return None
-
-    def build_structues(self, player):
-        if self.color in player.determine_buildable_tiles():
-            new_structure = self.build_evenly(player, False)
-            if new_structure:
-                if new_structure.price <= player.liquid_holdings:
-                    self.property.existing_structures.append(new_structure)
-                    player.liquid_holdings -= new_structure.price
-                else:
-                    return f'Insufficent funds.  Your liquid holdings total {player.liquid_holdings}, the structure\'s price is {new_structure.price}'
-
-    #It might make sense to make this more defensive, but the determineation of whether or not a structure can be removed is handled by self.build_evenly()
-    def remove_structures(self):
-        self.property.existing_structures.remove(-1)
+    # #Determine how many tiles the owner of this tile has, determine the number of structures on this tile, determine if mortgaged, deduct rent
+    # def if_owned(self, player, owner, dice_roll=None):
+    #     rent = self.assess_rent(owner)
+    #     player.liquid_holdings -= rent
+    #     if not self.property.mortgaged:
+    #         owner.liquid_holdings += rent
+    #
+    # def assess_rent(self, owner):
+    #     if self.color in owner.determine_buildable_tiles():
+    #         #Structures Case
+    #         if len(self.property.existing_structures) > 1:
+    #             return self.property.existing_structures[-1].rent
+    #         #Monopoly case (But not yet any structures)
+    #         else:
+    #             return self.property.base_rent * 2
+    #     #Base case
+    #     else:
+    #         return self.property.base_rent
+    #
+    # #If possible, returns the next buildable structure object from the Tile's list of possible structure
+    # #add_or_remove = boolean for if the method is being called to add or remove a structure
+    # def build_evenly(self, player, add_structure):
+    #     if len(self.property.existing_structures) == 0:
+    #         if add_structure:
+    #             return self.property.possible_structures[0]
+    #         else:
+    #             return None
+    #     else:
+    #         struct_count = [len(x.property.existing_structrues) for x in filter(lambda x: x.color == self.color, player.property_holdings)]
+    #         if max(struct_count) - min(struct_count) > 1:
+    #             raise Exception(f'The difference between the minimum and maximum number of structures on the {self.color} tiles has exceeded 1.  Min: {min(struct_count)} Max: {max(struct_count)}')
+    #
+    #         elif add_structure and len(self.property.existing_structures) == min(struct_count) and min(struct_count) != max(struct_count):
+    #             return self.property.possible_structures[min(struct_count)]
+    #         elif len(self.property.existing_structures) == max(struct_count):
+    #             return self.property.existing_structures[-1]
+    #         else:
+    #             return None
+    #
+    # def build_structues(self, player):
+    #     if self.color in player.determine_buildable_tiles():
+    #         new_structure = self.build_evenly(player, False)
+    #         if new_structure:
+    #             if new_structure.price <= player.liquid_holdings:
+    #                 self.property.existing_structures.append(new_structure)
+    #                 player.liquid_holdings -= new_structure.price
+    #             else:
+    #                 return f'Insufficent funds.  Your liquid holdings total {player.liquid_holdings}, the structure\'s price is {new_structure.price}'
+    #
+    # #It might make sense to make this more defensive, but the determineation of whether or not a structure can be removed is handled by self.build_evenly()
+    # def remove_structures(self):
+    #     self.property.existing_structures.remove(-1)
 
 
 
