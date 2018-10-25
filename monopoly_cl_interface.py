@@ -1,5 +1,4 @@
 from monopoly import *
-import time
 from distutils.util import strtobool
 
 
@@ -128,3 +127,4 @@ if __name__ == '__main__':
 
 
 
+# next_active_player = players[(players.find(active_player) + 1) % len(players)]

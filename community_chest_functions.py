@@ -1,5 +1,3 @@
-from monopoly_helper_functions import HelperFunctions
-
 def advance_to_go(player):
     player.position = 0
     player.liquid_holdings += 200

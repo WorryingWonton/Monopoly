@@ -1,6 +1,6 @@
 import unittest
 from monopoly import *
-from monopoly_cl_interface import *
+
 
 class TestMonopolyInitialization(unittest.TestCase):
     def test_game_initialization(self):
