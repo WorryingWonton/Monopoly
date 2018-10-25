@@ -9,10 +9,15 @@ class CLInterface():
     def get_decision(self, option_list):
         #if statement is part of test code, comment out when running outside of unit tests
         if len(option_list) > 0:
-            selection = input(f'''
+            while True:
+                try:
+                    selection = input(f'''
 Your options are: {self.ml_printer(option_list)}
 What would you like to do {self.game.active_player.name}?
 Type a number from the list and press Enter, to do nothing, enter 0:  ''')
+                    break
+                except ValueError:
+                    print('Please type a number corresponding to an item in the above list:  ')
             if int(selection) == 0:
                 return None
             return option_list[int(selection) - 1]
@@ -21,13 +26,23 @@ Type a number from the list and press Enter, to do nothing, enter 0:  ''')
         """
         get_amount(): asks the active_player how much they'd like to sell a particular item for
             -Takes item as an input, and returns an int representing the sell price"""
-        amount = int(input(f'''
+        while True:
+            try:
+                amount = int(input(f'''
 {self.game.active_player.name}, how much would you like to sell {item.name} for?'''))
+                break
+            except ValueError:
+                print('Please enter a number:  ')
         return amount
 
     def get_amount_to_buy(self, item, owner):
-        amount = int(input(f'''
+        while True:
+            try:
+                amount = int(input(f'''
 {self.game.active_player.name}, how much would you like to offer {owner.name} for {item.name}?  '''))
+                break
+            except ValueError:
+                print('Please enter a number:  ')
         return amount
 
     def pick_eligible_buyer(self, eligible_buyers):
@@ -35,34 +50,54 @@ Type a number from the list and press Enter, to do nothing, enter 0:  ''')
         :param eligible_buyers: List of buyers who can afford the item at the amount specified in get_amount()
         :return: A Player object chosen by the active_player
         """
-        eligible_buyer = eligible_buyers[int(input(f'''
+        while True:
+            try:
+                eligible_buyer = eligible_buyers[int(input(f'''
 Below is a list of the players who can afford to buy your item
         {self.ml_player_printer(eligible_buyers)}
 Pick a number from the list and press Enter:  ''')) - 1]
+                break
+            except ValueError:
+                print('Please enter a number corresponding to a player from the list above:  ')
         return eligible_buyer
 
     def get_buy_decision(self, item, buyer, amount):
         """
         get_buy_decision(): Asks the chosen buyer if they want to purchase the item
             -Takes an OwnableItem object, Player object, and an int representing the amount as inputs, returns True or False"""
-        buy_decision = strtobool(input(f'''
+        while True:
+            try:
+                buy_decision = strtobool(input(f'''
 {self.game.active_player.name} would like to sell you (--{buyer.name}--) {item.name} for ${amount}. 
 Do you want to buy the item for ${amount}?  Enter Yes or No:  ''').lower())
+                break
+            except ValueError:
+                print('Enter \'Yes\' or \'No\':  ')
         return buy_decision
 
     def get_buy_and_lift_mortgage_decision(self, item, buyer, seller, amount):
-        buy_decision = strtobool(input(f'''
+        while True:
+            try:
+                buy_decision = strtobool(input(f'''
 {buyer.name}, you have chosen to buy {item.name} from {seller.name}.
 This property is mortgaged.  You can lift the mortgage now for an additional {0.1*item.price} over {amount}
 The total cost of doing so is {0.1*item.price + amount}.  
 Unmortgaging a property at the time of purchase will save you an additional {0.1*item.price} later on as well as immediately let you charge rent and develop on {item.name}
 Do you wish to buy and lift the mortgage?  Entering No will just buy the property:  ''').lower())
+                break
+            except ValueError:
+                print('Enter \'Yes\' or \'No\':  ')
         return buy_decision
 
     def get_sell_decision(self, item, seller, proposed_amount):
-        sell_decision = strtobool(input(f'''
+        while True:
+            try:
+                sell_decision = strtobool(input(f'''
 {seller.name}, {self.game.active_player.name} would like to buy {item.name} off you for ${proposed_amount}.
 Would you like to sell for this price?  Enter Yes or No:  ''').lower())
+                break
+            except ValueError:
+                print('Enter \'Yes\' or \'No\':  ')
         return sell_decision
 
     def run_auction(self, item, seller):

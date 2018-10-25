@@ -3,7 +3,6 @@ import random
 from functools import reduce
 import cards
 import board
-import tiles
 
 class Monopoly:
 
