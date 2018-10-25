@@ -21,8 +21,6 @@ def advance_to_st_charles_place(game):
     game.active_player.advance_position(amount=game.active_player.compute_advancement_amount(target_position=get_tile_positions(game=game, name='St. Charles Place')[0]))
     game.board[game.active_player.position].tile_actions()
 
-#Utilities at 12 and 28
-#Note if Card.face == 'Advance token to nearest Utility', do not call the if_owned() method on the utility tile in question
 def advance_to_nearest_utility(game):
     utility_tile_positions = get_tile_positions(game=game, target=UtilityTile)
     nearest_tile_positions = list(filter(lambda x: x > game.active_player.position % 40, utility_tile_positions))
@@ -48,9 +46,8 @@ def bank_pays_you_50_dividend(game):
 
 def get_out_jail_free(game):
     game.active_player.jailed = False
-    dice_roll = game.roll_dice()
-    game.dice_roll = dice_roll
-    game.active_player.advance_position(amount=dice_roll)
+    game.dice_roll = game.roll_dice()
+    game.active_player.advance_position(amount=sum(game.dice_roll))
     game.board[game.active_player.position].tile_actions(game=game)
 
 def go_back_3_spaces(game):
