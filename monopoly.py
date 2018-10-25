@@ -11,6 +11,8 @@ class Monopoly:
         self.board = board.Board().board
         self.chance_deck = cards.ChanceDeck()
         self.community_deck = cards.CommunityChest()
+        self.active_player = None
+        self.generator = self.next_player_generator()
         self.turns = 0
         self.auction_timer = 10
         self.doubles = False
@@ -27,33 +29,17 @@ class Monopoly:
             if player.liquid_holdings < 0:
                 self.players.remove(player)
 
-    def advance_turn(self):
-        self.turns += 1
+    def next_player_generator(self):
+        while True:
+            for i in range(len(self.players)):
+                if i in range(len(self.players)):
+                    player = self.players[i]
+                else:
+                    break
+                yield player
 
-    @property
-    def active_player(self):
-        return self.players[self.turns % len(self.players)]
-
-    def roll_dice(self, mode=None):
-        """
-        This function returns a 2 tuple containing 2 randomly generated integers bound between 1 and 6
-        roll_dice does NOT update the dice_roll attribute in the Monopoly class
-        :param basestring mode: A string representing one of several possible test modes
-        :var dict test_modes: A dictionary containing different test modes, to remove RNG from the game.
-        :return tuple dice_roll:
-        """
-        #First turn scenario starting from GO
-        if self.turns < len(self.players):
-            test_modes = {'railroads': [(2, 3), (6, 4), (6, 4), (6, 4)]}
-        #All players have had their first turn
-        else:
-            test_modes = {'railroads': [(6, 4), (6, 4), (6, 4), (6, 4)]}
-        if mode:
-            if self.turns % len(self.players) == 0:
-                self.index += 1
-            return test_modes[mode][self.index % len(test_modes)]
-        else:
-            return (random.randint(1, 6), random.randint(1, 6))
+    def roll_dice(self):
+        return (random.randint(1, 6), random.randint(1, 6))
 
     def run_turn(self):
         self.dice_roll = self.roll_dice()
@@ -62,7 +48,7 @@ class Monopoly:
             pass
         else:
             self.active_player.advance_position(amount=self.dice_roll[0] + self.dice_roll[1])
-        print(f'\n{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name} --- Pos: {self.active_player.position} ---{[x.property.name for x in self.active_player.property_holdings]}')
+        print(f'\n{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name} --- Pos: {self.active_player.position} ({self.board[self.active_player.position]}) ---{[x.property.name for x in self.active_player.property_holdings]}')
         option_list = []
         tile_options = self.board[self.active_player.position].tile_actions(game=self)
         tile_options += self.board[self.active_player.position].find_properties_of_other_players(game=self)
@@ -91,19 +77,19 @@ class Monopoly:
 
     def run_game(self):
         while len(self.players) > 1:
-            self.run_turn()
             if self.doubles:
-                self.active_player.consecutive_turns += 1
-                if self.active_player.consecutive_turns >= 3:
-                    self.turns += self.active_player.consecutive_turns
-                    self.active_player.consecutive_turns = 0
+                if self.doubles == 3:
                     self.active_player.go_directly_to_jail()
-                    self.advance_turn()
-                    self.doubles = False
-                continue
+                    self.active_player = next(self.generator)
+                pass
             else:
-                self.advance_turn()
+                self.active_player = next(self.generator)
+            self.advance_turn()
+            self.run_turn()
         return self.players[0]
+
+    def advance_turn(self):
+        self.turns += 1
 
     def run_bankruptcy_process(self, creditor, debtor):
         #Perhaps unnecessary check to make sure the creditor is not being passed on debt
@@ -136,41 +122,6 @@ class Monopoly:
     def check_for_doubles(self):
         if self.dice_roll[0] == self.dice_roll[1]:
             self.doubles = True
-
-class OwnableItem:
-
-    def find_owner(self, game):
-        pass
-
-    def start_direct_sale_process(self, game):
-        """Takes an instance of the item and the active_player, makes a series of interface calls to handle the sale of a property.
-            -This method returns None
-                -This is done because the transaction function in both the Card and OwnableTile classes (sell_card() and sell_property() respectively) requires additional arguments that the execute_player_decision
-                    method in the Monopoly class cannot provide.  Therefore, this method is bypassed.
-            -If a direct sale cannot be made, then the item will go to auction (Note that the auction method(s) is in the cl_interface module.
-            """
-        pass
-
-    def start_direct_buy_process(self, game):
-        pass
-
-    def find_eligible_buyers(self, game, amount):
-        return list(filter(lambda player: player.liquid_holdings >= amount and player != game.active_player, game.players))
-
-    def start_auction_process(self, game, seller):
-        """This method is called under three conditions:
-            1.  The active player calls it directly
-            2.  The amount the active player asked to sell an item for was higher than any other player could afford (i.e. find_eligible_players returned an empty list)
-            3.  The buyer chosen by the player did not want to buy the item
-            When it's called, all players except the active player have the chance to bid on the item for a set period of time.
-            Most of the work for handling an auction is done by the interface module, all this does is call CLInterface.run_auction(item) and parse the returned 2 tuple from
-            said method (WinngingPlayer, winning_bid).
-            If run_auction() returns None, this method passes.
-            """
-        pass
-
-    def complete_transaction(self, buyer, seller, amount, game):
-        pass
 
 class Option:
     def __init__(self, option_name, item_name, action):

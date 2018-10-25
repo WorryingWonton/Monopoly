@@ -11,7 +11,7 @@ def get_tile_positions(game, target=None, name=None):
 def advance_to_go(game):
     tile_position = get_tile_positions(target=GoTile, game=game)
     game.active_player.position = tile_position[0]
-    game.board[game.active_player.position].tile_actions()
+    game.board[game.active_player.position].tile_actions(game=game)
 
 def go_to_jail(game):
     game.active_player.jailed = True

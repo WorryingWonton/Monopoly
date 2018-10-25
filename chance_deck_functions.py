@@ -11,15 +11,15 @@ def get_tile_positions(game, target=None, name=None):
 def advance_to_go(game):
     tile_position = get_tile_positions(target=GoTile, game=game)
     game.active_player.position = tile_position[0]
-    game.board[game.active_player.position].tile_actions()
+    game.board[game.active_player.position].tile_actions(game=game)
 
 def advance_to_illinois_ave(game):
     game.active_player.advance_position(amount=game.active_player.compute_advancement_amount(target_position=get_tile_positions(game=game, name='Illinois Avenue')[0]))
-    game.board[game.active_player.position].tile_actions()
+    game.board[game.active_player.position].tile_actions(game=game)
 
 def advance_to_st_charles_place(game):
     game.active_player.advance_position(amount=game.active_player.compute_advancement_amount(target_position=get_tile_positions(game=game, name='St. Charles Place')[0]))
-    game.board[game.active_player.position].tile_actions()
+    game.board[game.active_player.position].tile_actions(game=game)
 
 def advance_to_nearest_utility(game):
     utility_tile_positions = get_tile_positions(game=game, target=UtilityTile)
