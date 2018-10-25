@@ -6,7 +6,7 @@ import board
 
 class Monopoly:
 
-    def __init__(self):
+    def __init__(self, interface=None):
         self.players = []
         self.board = board.Board().board
         self.chance_deck = cards.ChanceDeck()
@@ -19,6 +19,10 @@ class Monopoly:
         self.dice_roll = None
         #Test mode parameter for dice_roll
         self.index = 0
+        if not interface:
+            self.interface = monopoly_cl_interface.CLInterface(game=self)
+        else:
+            self.interface = interface
 
     def add_player(self, name):
         self.players.append(Player(name, game=self))

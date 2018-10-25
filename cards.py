@@ -20,11 +20,11 @@ class Card(ownable_item.OwnableItem):
                     return player
 
     def start_direct_sale_process(self, game):
-        amount = monopoly_cl_interface.CLInterface(game=game).get_amount_to_sell(self)
+        amount = game.interface.get_amount_to_sell(self)
         eligible_buyers = self.find_eligible_buyers(game=game, amount=amount)
-        buyer = monopoly_cl_interface.CLInterface(game=game).pick_eligible_buyer(eligible_buyers)
+        buyer = game.interface.pick_eligible_buyer(eligible_buyers)
         if buyer:
-            buyer_decision = monopoly_cl_interface.CLInterface(game=game).get_buy_decision(item=self, buyer=buyer, amount=amount)
+            buyer_decision = game.interface.get_buy_decision(item=self, buyer=buyer, amount=amount)
             if buyer_decision:
                 self.complete_transaction(seller=game.active_player, amount=amount, buyer=buyer, game=game)
             else:
@@ -34,8 +34,8 @@ class Card(ownable_item.OwnableItem):
 
     def start_direct_buy_process(self, game):
         owner = self.find_owner(game=game)
-        amount = monopoly_cl_interface.CLInterface(game=game).get_amount_to_buy(item=self, owner=owner)
-        seller_decision = monopoly_cl_interface.CLInterface(game=game).get_sell_decision(item=self, proposed_amount=amount, seller=owner)
+        amount = game.interface.get_amount_to_buy(item=self, owner=owner)
+        seller_decision = game.interface.get_sell_decision(item=self, proposed_amount=amount, seller=owner)
         if seller_decision:
             self.complete_transaction(buyer=game.active_player, seller=owner, amount=amount, game=game)
 
@@ -50,7 +50,7 @@ class Card(ownable_item.OwnableItem):
         buyer.hand.append(self)
 
     def start_auction_process(self, game, seller):
-        winning_bid = monopoly_cl_interface.CLInterface(game=game).run_auction(item=self, seller=seller)
+        winning_bid = game.interface.run_auction(item=self, seller=seller)
         if winning_bid:
             if winning_bid[0].liquid_holdings < winning_bid[1]:
                 game.run_bankruptcy_process(debtor=winning_bid[0], creditor=game.active_player)

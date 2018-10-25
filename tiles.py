@@ -119,11 +119,11 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
         game.active_player.property_holdings.remove(self)
 
     def start_direct_sale_process(self, game):
-        amount = monopoly_cl_interface.CLInterface(game=game).get_amount_to_sell(item=self.property)
+        amount = game.interface.get_amount_to_sell(item=self.property)
         eligible_buyers = self.find_eligible_buyers(game=game, amount=amount)
-        buyer = monopoly_cl_interface.CLInterface(game=game).pick_eligible_buyer(eligible_buyers)
+        buyer = game.interface.pick_eligible_buyer(eligible_buyers)
         if buyer:
-            buyer_decision = monopoly_cl_interface.CLInterface(game=game).get_buy_decision(item=self.property, amount=amount, buyer=buyer)
+            buyer_decision = game.interface.get_buy_decision(item=self.property, amount=amount, buyer=buyer)
             if buyer_decision:
                 self.complete_transaction(buyer=buyer, seller=game.active_player, amount=amount, game=game)
             else:
@@ -133,13 +133,13 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
 
     def start_direct_buy_process(self, game):
         owner = self.find_owner(game.players)
-        amount = monopoly_cl_interface.CLInterface(game=game).get_amount_to_buy(owner=owner, item=self.property)
-        seller_decision = monopoly_cl_interface.CLInterface(game=game).get_sell_decision(item=self.property, seller=owner, proposed_amount=amount)
+        amount = game.interface.get_amount_to_buy(owner=owner, item=self.property)
+        seller_decision = game.interface.get_sell_decision(item=self.property, seller=owner, proposed_amount=amount)
         if seller_decision:
             self.complete_transaction(buyer=game.active_player, seller=owner, amount=amount, game=game)
 
     def start_auction_process(self, game, seller):
-        winning_bid = monopoly_cl_interface.CLInterface(game=game).run_auction(item=self.property, seller=seller)
+        winning_bid = game.interface.run_auction(item=self.property, seller=seller)
         if winning_bid:
             if winning_bid[0].liquid_holdings < winning_bid[1]:
                 game.run_bankruptcy_process(debtor=winning_bid[0], creditor=game.active_player)
@@ -151,7 +151,7 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
             a mortgaged property is auctioned.  Or if, for that matter, if a mortgaged property can be auctioned.  I'm designing to the spec that a mortgaged property
             can be auctioned and the extra 10% assessed is based off the mortgage price."""
             if amount + 1.1 * self.property.mortgage_price <= buyer.liquid_holdings:
-                immediate_unmortgage_decision = monopoly_cl_interface.CLInterface(game=game).get_buy_and_lift_mortgage_decision(buyer=buyer, seller=seller, amount=amount, item=self.property)
+                immediate_unmortgage_decision = game.interface.get_buy_and_lift_mortgage_decision(buyer=buyer, seller=seller, amount=amount, item=self.property)
                 if immediate_unmortgage_decision:
                     self.property.mortgaged = False
                     buyer.liquid_holdings -= 1.1 * self.property.mortgage_price
