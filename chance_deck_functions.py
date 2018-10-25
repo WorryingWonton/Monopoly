@@ -6,7 +6,7 @@ def get_tile_positions(game, target=None, name=None):
     if target:
         return [tile.position for tile in game.board if isinstance(tile, target)]
     if name:
-        return [tile.position for tile in game.board if tile.property.name == name]
+        return [tile.position for tile in game.board if tile.property.name == name][0]
 
 def advance_to_go(game):
     tile_position = get_tile_positions(target=GoTile, game=game)
@@ -14,11 +14,13 @@ def advance_to_go(game):
     game.board[game.active_player.position].tile_actions(game=game)
 
 def advance_to_illinois_ave(game):
-    game.active_player.advance_position(amount=game.active_player.compute_advancement_amount(target_position=get_tile_positions(game=game, name='Illinois Avenue')[0]))
+    tile_position = get_tile_positions(name='Illinois Avenue', game=game)
+    game.active_player.advance_position(amount=game.active_player.compute_advancement_amount(target_position=tile_position))
     game.board[game.active_player.position].tile_actions(game=game)
 
 def advance_to_st_charles_place(game):
-    game.active_player.advance_position(amount=game.active_player.compute_advancement_amount(target_position=get_tile_positions(game=game, name='St. Charles Place')[0]))
+    tile_position = get_tile_positions(name='Illinois Avenue', game=game)
+    game.active_player.advance_position(amount=game.active_player.compute_advancement_amount(target_position=tile_position))
     game.board[game.active_player.position].tile_actions(game=game)
 
 def advance_to_nearest_utility(game):
@@ -80,12 +82,12 @@ def pay_poor_tax(game):
         game.run_bankruptcy_process(creditor=game.bank, debtor=game.active_player)
 
 def take_trip_to_reading_railroad(game):
-    rrr_pos = get_tile_positions(target='Reading Railroad', game=game)
+    rrr_pos = get_tile_positions(name='Reading Railroad', game=game)
     game.active_player.advance_position(amount=game.active_player.compute_advancement_amount(target_position=rrr_pos))
     game.board[game.active_player.position].tile_actions()
 
 def take_a_walk_on_boardwalk(game):
-    bw_pos = get_tile_positions(target='Boardwalk', game=game)
+    bw_pos = get_tile_positions(name='Boardwalk', game=game)
     game.active_player.advance_position(amount=game.active_player.compute_advancement_amount(target_position=bw_pos))
     game.board[game.active_player.position].tile_actions()
 

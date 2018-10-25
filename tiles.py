@@ -161,6 +161,8 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
                 return
         else:
             buyer.liquid_holdings -= amount
+            if buyer.liquid_holdings < 0:
+                game.run_bankruptcy_process(debtor=buyer, creditor=seller)
         seller.property_holdings.remove(self)
         buyer.property_holdings.append(self)
         seller.liquid_holdings += amount
@@ -252,13 +254,21 @@ class JailTile(UnownableTile):
                 game.dice_roll = dice_roll
                 return game.board[game.active_player.position].tile_actions(game=game)
             if game.active_player.liquid_holdings >= 50:
-                option_list.append(monopoly.Option(option_name='Pay Jail Fine ($50)', item_name=None, action=game.active_player.pay_jail_fine))
+                option_list.append(monopoly.Option(option_name='Pay Jail Fine ($50)', item_name=None, action=self.pay_jail_fine))
             for card in game.active_player.hand:
                 if card.name == 'Get out of Jail Free':
                     option_list.append(monopoly.Option(option_name=f'Use {card.name} card from {card.parent_deck}', action=card.action, item_name=card.name))
         else:
             game.active_player.pay_jail_fine()
         return option_list
+
+    def pay_jail_fine(self, game):
+        game.active_player.liquid_holdings -= 50
+        if game.active_player.liquid_holdings < 0:
+            self.game.run_bankruptcy_process(debtor=game.active_player, creditor=game.bank)
+        else:
+            game.active_player.jailed = False
+            game.active_player.position = sum(game.roll_dice())
 
 @attr.s
 class CardTile(UnownableTile):

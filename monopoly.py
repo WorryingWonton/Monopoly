@@ -15,7 +15,6 @@ class Monopoly:
         self.generator = self.next_player_generator()
         self.turns = 0
         self.auction_timer = 10
-        self.doubles = False
         self.bank = Bank(game=self)
         self.dice_roll = None
         #Test mode parameter for dice_roll
@@ -23,11 +22,6 @@ class Monopoly:
 
     def add_player(self, name):
         self.players.append(Player(name, game=self))
-
-    def eject_bankrupt_players(self):
-        for player in self.players:
-            if player.liquid_holdings < 0:
-                self.players.remove(player)
 
     def next_player_generator(self):
         while True:
@@ -43,7 +37,6 @@ class Monopoly:
 
     def run_turn(self):
         self.dice_roll = self.roll_dice()
-        self.check_for_doubles()
         if self.active_player.jailed:
             pass
         else:
@@ -67,6 +60,7 @@ class Monopoly:
         if len(option_list) > 0:
             active_player_decision = monopoly_cl_interface.CLInterface(game=self).get_decision(option_list)
             self.execute_player_decision(active_player_decision)
+        return self.check_for_doubles()
 
     #active_player_decision
         #Need to implement common interface amongst executvie methods:
@@ -76,16 +70,20 @@ class Monopoly:
             active_player_decision.action(self)
 
     def run_game(self):
+        doubles = False
         while len(self.players) > 1:
-            if self.doubles:
-                if self.doubles == 3:
+            if doubles:
+                self.active_player.consecutive_turns += 1
+                if self.active_player.consecutive_turns == 3:
+                    self.active_player.consecutive_turns = 0
                     self.active_player.go_directly_to_jail()
                     self.active_player = next(self.generator)
-                pass
+                    doubles = False
+                    continue
             else:
                 self.active_player = next(self.generator)
             self.advance_turn()
-            self.run_turn()
+            doubles = self.run_turn()
         return self.players[0]
 
     def advance_turn(self):
@@ -120,8 +118,7 @@ class Monopoly:
         self.bank.hand = []
 
     def check_for_doubles(self):
-        if self.dice_roll[0] == self.dice_roll[1]:
-            self.doubles = True
+        return self.dice_roll[0] == self.dice_roll[1]
 
 class Option:
     def __init__(self, option_name, item_name, action):
@@ -185,14 +182,6 @@ class Player:
     def go_directly_to_jail(self):
         self.position = 10
         self.jailed = True
-
-    def pay_jail_fine(self):
-        self.liquid_holdings -= 50
-        if self.liquid_holdings < 0:
-            self.game.run_bankruptcy_process(debtor=self, creditor=self.game.bank)
-        else:
-            self.jailed = False
-            self.position += sum(self.game.roll_dice())
 
     def generate_card_options(self):
         card_options = []
