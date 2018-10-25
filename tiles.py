@@ -253,10 +253,10 @@ class JailTile(UnownableTile):
                 game.active_player.advance_position(amount=sum(dice_roll))
                 game.dice_roll = dice_roll
                 return game.board[game.active_player.position].tile_actions(game=game)
-            if game.active_player.liquid_holdings >= 50:
+            if game.active_player.liquid_holdings >= 50 and game.active_player.jailed:
                 option_list.append(monopoly.Option(option_name='Pay Jail Fine ($50)', item_name=None, action=self.pay_jail_fine))
             for card in game.active_player.hand:
-                if card.name == 'Get out of Jail Free':
+                if card.name == 'Get out of Jail Free' and game.active_player.jailed:
                     option_list.append(monopoly.Option(option_name=f'Use {card.name} card from {card.parent_deck}', action=card.action, item_name=card.name))
         else:
             game.active_player.pay_jail_fine()
