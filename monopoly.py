@@ -200,6 +200,11 @@ class Player:
     def pass_go(self):
         self.liquid_holdings += 200
 
+if __name__ == '__main__':
+    game_instance = Monopoly()
+    game_instance.interface.add_players()
+    game_instance.run_game()
+
 
 
 

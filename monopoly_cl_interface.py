@@ -157,8 +157,27 @@ Enter an amount larger than {highest_bid}, enter an equal or smaller amount to q
         pass
 
 
-if __name__ == '__main__':
-    game_instance = Monopoly()
+    def add_players(self):
+        print("""
+Welcome to Command Line Monopoly!
+Once two or more players have been added, the game can start.
+The game will run until all but one player been bankrupted.
+Command Line Monopoly attempts to follow the rules for Monopoly as specified in:
+https://www.hasbro.com/common/instruct/monins.pdf
+To start, enter the names of the participants below.  The turn order for the game is based on the order
+in which players are added to it.
+""")
+        while len(self.game.players) < 6:
+            player_name = input(f'''
+    To stop entering players, type \'stop\'.
+    What is Player {len(self.game.players) + 1}\'s name?  ''')
+            if player_name.lower() == 'stop':
+                if len(self.game.players) < 2:
+                    raise Exception('Not enough players in the game to start.')
+                else:
+                    self.game.players.append(Player(name=player_name, game=self.game))
+            else:
+                self.game.players.append(Player(name=player_name, game=self.game))
 
 
 

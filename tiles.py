@@ -1,6 +1,5 @@
 import attr
 import monopoly
-import monopoly_cl_interface
 import ownable_item
 
 class Property:

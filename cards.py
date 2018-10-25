@@ -1,4 +1,3 @@
-import monopoly_cl_interface
 import attr
 import random
 import ownable_item
