@@ -45,7 +45,7 @@ class Monopoly:
             pass
         else:
             self.active_player.advance_position(amount=self.dice_roll[0] + self.dice_roll[1])
-        print(f'\n{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name} --- Pos: {self.active_player.position} ({self.board[self.active_player.position]}) ---{[x.property.name for x in self.active_player.property_holdings]}')
+        print(f'\n{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name} --- Pos: {self.active_player.position} ({self.board[self.active_player.position]}) --- {self.dice_roll} ---{[x.property.name for x in self.active_player.property_holdings]}')
         option_list = []
         tile_options = self.board[self.active_player.position].tile_actions(game=self)
         tile_options += self.board[self.active_player.position].find_properties_of_other_players(game=self)
@@ -86,6 +86,7 @@ class Monopoly:
                     continue
             else:
                 self.active_player = next(self.generator)
+                self.active_player.consecutive_turns = 0
             self.advance_turn()
             doubles = self.run_turn()
         return self.players[0]
