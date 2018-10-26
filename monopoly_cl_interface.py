@@ -156,7 +156,6 @@ Enter an amount larger than {highest_bid}, enter an equal or smaller amount to q
                     Elapsed Time since starting the game"""
         pass
 
-
     def add_players(self):
         print("""
 Welcome to Command Line Monopoly!
@@ -178,7 +177,3 @@ in which players are added to it.
                     break
             else:
                 self.game.players.append(Player(name=player_name, game=self.game))
-
-
-
-# next_active_player = players[(players.find(active_player) + 1) % len(players)]

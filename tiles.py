@@ -14,13 +14,13 @@ class Property:
         self.existing_structures = []
         self.mortgaged = False
 
+
 class Structure:
     def __init__(self, type, price, rent):
         self.type = type
         self.price = price
         self.rent = rent
 
-#tile_action(self) --- Performs the relevant actions for a tile when called.
 
 @attr.s
 class Tile:
@@ -43,7 +43,6 @@ class Tile:
         return option_list
 
 
-#Should be able to tell if the property on the Tile is on the market, how many like tiles the Owner of the landed on tile has, determine if the Tile can be sold (I think this may be unique to color tiles)
 @attr.s
 class OwnableTile(Tile, ownable_item.OwnableItem):
     property: Property = attr.ib()
@@ -55,7 +54,6 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
         else:
             return self.if_not_owned(active_player=game.active_player)
 
-    #Find owner of tile occupied by the active_player, if no owner, return None
     def find_owner(self, players):
         for player in players:
             for property in player.property_holdings:
@@ -91,7 +89,6 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
         game.active_player.liquid_holdings -= 0.1*self.property.mortgage_price
         self.property.mortgaged = False
 
-    #Below method finds out how many similar properties an owner has
     def count_similar_owned_properties(self, owner):
         num_tiles = 0
         for tile in owner.property_holdings:
@@ -109,7 +106,8 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
                 return []
             else:
                 return [monopoly.Option(option_name=f'Sell {self.property.name}', action=self.start_direct_sale_process, item_name=self.property.name),
-                        monopoly.Option(option_name=f'Sell {self.property.name} to the Bank for {0.5 * self.property.price}', action=self.sell_to_bank, item_name=self.property.name)]
+                        monopoly.Option(option_name=f'Sell {self.property.name} to the Bank for {0.5 * self.property.price}', action=self.sell_to_bank, item_name=self.property.name),
+                        monopoly.Option(option_name=f'Mortgage {self.property.name} (Note: This will not permit you to develop {self.property.name} or enable you to charge rent on it)', action=self.mortgage_owned_property, item_name=self.property.name)]
         else:
             return []
 
@@ -172,9 +170,11 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
     def assess_rent(self, owner, game):
         pass
 
+
 @attr.s
 class UnownableTile(Tile):
     pass
+
 
 #tile_actions() needs to determine the Tile's state, perform automatic actions on the active_player as a function of that state, and return a list of options the player can choose from
 @attr.s
@@ -232,6 +232,7 @@ class RailRoadTile(OwnableTile):
         self.property.existing_structures = []
         game.active_player.liquid_holdings += self.property.possible_structures[0].price
 
+
 @attr.s
 class JailTile(UnownableTile):
 
@@ -269,9 +270,11 @@ class JailTile(UnownableTile):
             game.active_player.jailed = False
             game.active_player.position = sum(game.roll_dice())
 
+
 @attr.s
 class CardTile(UnownableTile):
     pass
+
 
 @attr.s
 class ChanceTile(CardTile):
@@ -281,6 +284,7 @@ class ChanceTile(CardTile):
         game.active_player.dealt_card.consume_card(game=game)
         return []
 
+
 @attr.s
 class CommunityChestTile(CardTile):
 
@@ -289,12 +293,14 @@ class CommunityChestTile(CardTile):
         game.active_player.dealt_card.consume_card(game=game)
         return []
 
+
 @attr.s
 class GoToJailTile(UnownableTile):
 
     def tile_actions(self, game):
         game.active_player.go_directly_to_jail()
         return []
+
 
 @attr.s
 class LuxuryTaxTile(UnownableTile):
@@ -306,9 +312,11 @@ class LuxuryTaxTile(UnownableTile):
             game.run_bankruptcy_process(creditor=game.bank, debtor=game.active_player)
         return []
 
+
 @attr.s
 class FreeParking(UnownableTile):
     pass
+
 
 @attr.s
 class IncomeTaxTile(UnownableTile):
@@ -320,12 +328,15 @@ class IncomeTaxTile(UnownableTile):
         else:
             game.active_player.liquid_holdings -= 200
         return []
+
+
 @attr.s
 class GoTile(UnownableTile):
 
     def tile_actions(self, game):
         game.active_player.pass_go()
         return []
+
 
 @attr.s
 class UtilityTile(OwnableTile):
@@ -351,6 +362,7 @@ class UtilityTile(OwnableTile):
         else:
             owner.liquid_holdings += rent_assessed
             game.active_player.liquid_holdings -= rent_assessed
+
 
 @attr.s
 class ColorTile(OwnableTile):

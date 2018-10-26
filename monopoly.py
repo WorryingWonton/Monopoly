@@ -17,8 +17,6 @@ class Monopoly:
         self.auction_timer = 10
         self.bank = Bank(game=self)
         self.dice_roll = None
-        #Test mode parameter for dice_roll
-        self.index = 0
         if not interface:
             self.interface = monopoly_cl_interface.CLInterface(game=self)
         else:
@@ -66,9 +64,6 @@ class Monopoly:
             self.execute_player_decision(active_player_decision)
         return self.check_for_doubles()
 
-    #active_player_decision
-        #Need to implement common interface amongst executvie methods:
-            #Executive methods return None
     def execute_player_decision(self, active_player_decision):
         if active_player_decision:
             active_player_decision.action(self)
@@ -146,7 +141,6 @@ class Player:
         self.name = name
         self.position = 0
         self.liquid_holdings = 1500
-        #Contains a list of Tile objects the player currently owns properties on
         self.consecutive_turns = 0
         self.property_holdings = []
         self.jailed_turns = 0
@@ -204,20 +198,3 @@ if __name__ == '__main__':
     game_instance = Monopoly()
     game_instance.interface.add_players()
     game_instance.run_game()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        

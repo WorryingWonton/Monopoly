@@ -9,7 +9,6 @@ def get_tile_positions(game, target=None, name=None):
         ownable_tiles = list(filter(lambda tile: isinstance(tile, OwnableTile), game.board))
         return [tile.position for tile in ownable_tiles if tile.property.name == name][0]
 
-
 def advance_to_go(game):
     tile_position = get_tile_positions(target=GoTile, game=game)
     game.active_player.position = tile_position[0]
@@ -110,10 +109,3 @@ def your_building_loan_matures(game):
 
 def you_have_won_a_crossword_competition(game):
     game.active_player.liquid_holdings += 100
-
-
-
-
-
-
-
