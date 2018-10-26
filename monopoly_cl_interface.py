@@ -11,10 +11,10 @@ class CLInterface():
         if len(option_list) > 0:
             while True:
                 try:
-                    selection = input(f'''
+                    selection = int(input(f'''
 Your options are: {self.ml_printer(option_list)}
 What would you like to do {self.game.active_player.name}?
-Type a number from the list and press Enter, to do nothing, enter 0:  ''')
+Type a number from the list and press Enter, to do nothing, enter 0:  '''))
                     break
                 except ValueError:
                     print('Please type a number corresponding to an item in the above list:  ')
@@ -175,7 +175,7 @@ in which players are added to it.
                 if len(self.game.players) < 2:
                     raise Exception('Not enough players in the game to start.')
                 else:
-                    self.game.players.append(Player(name=player_name, game=self.game))
+                    break
             else:
                 self.game.players.append(Player(name=player_name, game=self.game))
 

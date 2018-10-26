@@ -6,7 +6,8 @@ def get_tile_positions(game, target=None, name=None):
     if target:
         return [tile.position for tile in game.board if isinstance(tile, target)]
     if name:
-        return [tile.position for tile in game.board if tile.property.name == name]
+        ownable_tiles = list(filter(lambda tile: isinstance(tile, OwnableTile), game.board))
+        return [tile.position for tile in ownable_tiles if tile.property.name == name][0]
 
 def advance_to_go(game):
     tile_position = get_tile_positions(target=GoTile, game=game)
