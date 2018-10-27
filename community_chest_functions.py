@@ -86,7 +86,10 @@ def you_are_assessed_for_street_repairs(game):
                 amount_assessed += 115
             if structure.type == 'house':
                 amount_assessed += 30
-    return amount_assessed
+    if game.active_player.liquid_holdings < amount_assessed:
+        game.run_bankruptcy_process(debtor=game.active_player, creditor=game.bank)
+    else:
+        game.active_player.liquid_holdings -= amount_assessed
 
 def you_have_won_second_prize_in_a_beauty_contest(game):
     game.active_player.liquid_holdings += 10

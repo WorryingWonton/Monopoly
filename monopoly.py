@@ -14,7 +14,6 @@ class Monopoly:
         self.active_player = None
         self.generator = self.next_player_generator()
         self.turns = 0
-        self.auction_timer = 10
         self.bank = Bank(game=self)
         self.dice_roll = None
         if not interface:
