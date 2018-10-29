@@ -419,8 +419,8 @@ class ColorTile(OwnableTile):
             struct_counts = [x[1] for x in struct_tuples]
             option_list = []
             for struct_tuple in struct_tuples:
-                if struct_tuple[1] == max(struct_counts):
-                    option_list.append(monopoly.Option(option_name=f'Remove {struct_tuple[0].property.possible_structures[len(struct_tuple[0].property.existing_structures)]} on {struct_tuple[0].property.name}', action=self.remove_structure, item_name=struct_tuple[0].property.possible_structures[len(struct_tuple[0].property.existing_structures)]))
+                if struct_tuple[1] == max(struct_counts) and struct_tuple[0] == self:
+                    option_list.append(monopoly.Option(option_name=f'Remove {struct_tuple[0].property.possible_structures[len(struct_tuple[0].property.existing_structures) - 1].type} on {struct_tuple[0].property.name}', action=self.remove_structure, item_name=struct_tuple[0].property.possible_structures[len(struct_tuple[0].property.existing_structures) - 1]))
             return option_list
 
     def build_structure(self, game):

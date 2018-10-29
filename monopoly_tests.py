@@ -1,6 +1,6 @@
 import unittest
 import monopoly
-
+import tiles
 
 # class TestMonopolyInitialization(unittest.TestCase):
 #     def test_game_initialization(self):
@@ -148,7 +148,7 @@ class TestColorTile(unittest.TestCase):
         game_instance.board[37].build_structure(game=game_instance)
         self.assertEqual([], game_instance.board[37].list_buildable_structures(game=game_instance))
         self.assertEqual('Build house on Boardwalk', game_instance.board[39].list_buildable_structures(game=game_instance)[0].option_name)
-        #Build a house on Boardwalk, verify that houses can now again be build on both Park Place and BoardWalk
+        #Build a house on Boardwalk, verify that houses can again be built on both Park Place and BoardWalk
         game_instance.board[39].build_structure(game=game_instance)
         self.assertEqual('Build house on Park Place', game_instance.board[37].list_buildable_structures(game=game_instance)[0].option_name)
         self.assertEqual('Build house on Boardwalk', game_instance.board[39].list_buildable_structures(game=game_instance)[0].option_name)
@@ -181,6 +181,16 @@ class TestColorTile(unittest.TestCase):
         self.assertEqual([], game_instance.board[39].list_buildable_structures(game=game_instance))
         self.assertEqual([], game_instance.board[37].list_buildable_structures(game=game_instance))
 
+    def test_list_removable_structures(self):
+        game_instance = monopoly.Monopoly()
+        game_instance.add_player('Bill')
+        game_instance.active_player = game_instance.players[0]
+        game_instance.active_player.property_holdings = [tile for tile in game_instance.board if isinstance(tile, tiles.ColorTile) and tile.color == 'green']
+        for tile in game_instance.active_player.property_holdings:
+            tile.property.existing_structures = tile.property.possible_structures
+        self.assertEqual('Remove hotel on Pacific Avenue', game_instance.board[31].list_removable_structures(game=game_instance)[0].option_name)
+        self.assertEqual('Remove hotel on North Carolina Avenue', game_instance.board[32].list_removable_structures(game=game_instance)[0].option_name)
+        self.assertEqual('Remove hotel on Pennsylvania Avenue', game_instance.board[34].list_removable_structures(game=game_instance)[0].option_name)
 
 
 
