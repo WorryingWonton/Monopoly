@@ -187,13 +187,38 @@ class TestColorTile(unittest.TestCase):
         game_instance.active_player = game_instance.players[0]
         game_instance.active_player.property_holdings = [tile for tile in game_instance.board if isinstance(tile, tiles.ColorTile) and tile.color == 'green']
         for tile in game_instance.active_player.property_holdings:
-            tile.property.existing_structures = tile.property.possible_structures
+            tile.property.existing_structures += tile.property.possible_structures
         self.assertEqual('Remove hotel on Pacific Avenue', game_instance.board[31].list_removable_structures(game=game_instance)[0].option_name)
         self.assertEqual('Remove hotel on North Carolina Avenue', game_instance.board[32].list_removable_structures(game=game_instance)[0].option_name)
         self.assertEqual('Remove hotel on Pennsylvania Avenue', game_instance.board[34].list_removable_structures(game=game_instance)[0].option_name)
-
-
-
+        game_instance.board[31].remove_structure(game=game_instance)
+        self.assertEqual([], game_instance.board[31].list_removable_structures(game=game_instance))
+        self.assertEqual('Remove hotel on North Carolina Avenue', game_instance.board[32].list_removable_structures(game=game_instance)[0].option_name)
+        self.assertEqual('Remove hotel on Pennsylvania Avenue', game_instance.board[34].list_removable_structures(game=game_instance)[0].option_name)
+        game_instance.board[32].remove_structure(game=game_instance)
+        self.assertEqual([], game_instance.board[31].list_removable_structures(game=game_instance))
+        self.assertEqual([], game_instance.board[32].list_removable_structures(game=game_instance))
+        self.assertEqual('Remove hotel on Pennsylvania Avenue', game_instance.board[34].list_removable_structures(game=game_instance)[0].option_name)
+        game_instance.board[34].remove_structure(game=game_instance)
+        counter = 0
+        while len(game_instance.board[31].property.existing_structures) > 0:
+            self.assertEqual('Remove house on Pacific Avenue', game_instance.board[31].list_removable_structures(game=game_instance)[0].option_name)
+            self.assertEqual('Remove house on North Carolina Avenue', game_instance.board[32].list_removable_structures(game=game_instance)[0].option_name)
+            self.assertEqual('Remove house on Pennsylvania Avenue', game_instance.board[34].list_removable_structures(game=game_instance)[0].option_name)
+            game_instance.board[31].remove_structure(game=game_instance)
+            self.assertEqual([], game_instance.board[31].list_removable_structures(game=game_instance))
+            self.assertEqual('Remove house on North Carolina Avenue', game_instance.board[32].list_removable_structures(game=game_instance)[0].option_name)
+            self.assertEqual('Remove house on Pennsylvania Avenue', game_instance.board[34].list_removable_structures(game=game_instance)[0].option_name)
+            game_instance.board[32].remove_structure(game=game_instance)
+            self.assertEqual([], game_instance.board[31].list_removable_structures(game=game_instance))
+            self.assertEqual([], game_instance.board[32].list_removable_structures(game=game_instance))
+            self.assertEqual('Remove house on Pennsylvania Avenue', game_instance.board[34].list_removable_structures(game=game_instance)[0].option_name)
+            game_instance.board[34].remove_structure(game=game_instance)
+            counter += 1
+        #Verify that the while loop ran for four iterations
+        self.assertEqual(len(game_instance.board[31].property.possible_structures) - 1, counter)
+        for tile in game_instance.active_player.property_holdings:
+            self.assertEqual([], tile.property.existing_structures)
 
 
 if __name__ == '__main__':

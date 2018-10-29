@@ -428,5 +428,5 @@ class ColorTile(OwnableTile):
         self.property.existing_structures.append(self.property.possible_structures[len(self.property.existing_structures)])
 
     def remove_structure(self, game):
-        game.active_player.liquid_holdings += self.property.possible_structures[len(self.property.existing_structures)].price / 2
+        game.active_player.liquid_holdings += self.property.possible_structures[len(self.property.existing_structures) - 1].price / 2
         self.property.existing_structures.remove(self.property.existing_structures[-1])
