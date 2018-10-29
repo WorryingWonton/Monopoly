@@ -389,15 +389,15 @@ class ColorTile(OwnableTile):
 
     def list_buildable_structures(self, game):
         if self.determine_if_buildable(game=game):
-            struct_tuples = [(tile, len(tile.existing_structures)) for tile in list(filter(lambda x: isinstance(x, ColorTile) and self.color == x.color and len(x.property.existing_structures) != len(x.property.possible_structures), game.active_player.property_holdings))]
+            struct_tuples = [(tile, len(tile.property.existing_structures)) for tile in list(filter(lambda x: isinstance(x, ColorTile) and self.color == x.color and len(x.property.existing_structures) != len(x.property.possible_structures), game.active_player.property_holdings))]
             if not struct_tuples:
                 return []
             else:
                 struct_counts = [x[1] for x in struct_tuples]
                 option_list = []
                 for struct_tuple in struct_tuples:
-                    if struct_tuple[1] == min(struct_counts) and struct_tuple[0].property.possible_structures[struct_tuple[1]].price <= game.active_player.liquid_holdings:
-                        option_list.append(monopoly.Option(option_name=f'Build {struct_tuple[0].property.possible_structures[struct_tuple[1]]} on {struct_tuple[0].property.name}', action=self.build_structure, item_name=struct_tuple[0].property.possible_structures[struct_tuple[1]]))
+                    if struct_tuple[1] == min(struct_counts) and struct_tuple[0].property.possible_structures[struct_tuple[1]].price <= game.active_player.liquid_holdings and struct_tuple[0] == self:
+                        option_list.append(monopoly.Option(option_name=f'Build {struct_tuple[0].property.possible_structures[struct_tuple[1]].type} on {struct_tuple[0].property.name}', action=self.build_structure, item_name=struct_tuple[0].property.possible_structures[struct_tuple[1]]))
                 return option_list
         else:
             return []
@@ -412,7 +412,7 @@ class ColorTile(OwnableTile):
         return color_group_dict[self.color] == counter
 
     def list_removable_structures(self, game):
-        struct_tuples = [(tile, len(tile.existing_structures)) for tile in list(filter(lambda x: isinstance(x, ColorTile) and self.color == x.color and len(x.property.existing_structures) > 0,  game.active_player.property_holdings))]
+        struct_tuples = [(tile, len(tile.property.existing_structures)) for tile in list(filter(lambda x: isinstance(x, ColorTile) and self.color == x.color and len(x.property.existing_structures) > 0,  game.active_player.property_holdings))]
         if not struct_tuples:
             return []
         else:

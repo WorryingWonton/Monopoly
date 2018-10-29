@@ -116,6 +116,73 @@ class TestSingleTurn(unittest.TestCase):
 
 
 
+class TestColorTile(unittest.TestCase):
+
+    def test_determine_if_buildable(self):
+        """
+        This test will verify that ColorTile.determine_if_buildable() will only return True if a Player owns all
+        tiles within a color-set.
+        :return None:
+        """
+        game_instance = monopoly.Monopoly()
+        game_instance.add_player('Bob')
+        game_instance.active_player = game_instance.players[0]
+        game_instance.players[0].property_holdings.append(game_instance.board[37])
+        #Case 1:  Player does not have all tiles within a color-set
+        self.assertEqual(False, game_instance.board[37].determine_if_buildable(game=game_instance))
+        game_instance.players[0].property_holdings.append(game_instance.board[39])
+        #Case 2:  Player owns all tiles within a color-set
+        self.assertEqual(True, game_instance.board[39].determine_if_buildable(game=game_instance))
+
+    def test_list_buildable_structures(self):
+        game_instance = monopoly.Monopoly()
+        #Add a player, add both blue properties to the player's property goldings
+        game_instance.add_player(name='Alan')
+        game_instance.active_player = game_instance.players[0]
+        game_instance.players[0].property_holdings.append(game_instance.board[37])
+        game_instance.players[0].property_holdings.append(game_instance.board[39])
+        #Verify that the list_buildable_structures() returns the option to build a house on each blue tile, given that no structures are currently present
+        self.assertEqual('Build house on Park Place', game_instance.board[37].list_buildable_structures(game=game_instance)[0].option_name)
+        self.assertEqual('Build house on Boardwalk', game_instance.board[39].list_buildable_structures(game=game_instance)[0].option_name)
+        #Build a house on Park Place, verify that a second house cannot be built on same, then verify that a house can still be build on Park Place
+        game_instance.board[37].build_structure(game=game_instance)
+        self.assertEqual([], game_instance.board[37].list_buildable_structures(game=game_instance))
+        self.assertEqual('Build house on Boardwalk', game_instance.board[39].list_buildable_structures(game=game_instance)[0].option_name)
+        #Build a house on Boardwalk, verify that houses can now again be build on both Park Place and BoardWalk
+        game_instance.board[39].build_structure(game=game_instance)
+        self.assertEqual('Build house on Park Place', game_instance.board[37].list_buildable_structures(game=game_instance)[0].option_name)
+        self.assertEqual('Build house on Boardwalk', game_instance.board[39].list_buildable_structures(game=game_instance)[0].option_name)
+        #The tests below this comment will verify that houses can be built via the Build Evenly rule until len(existing_structures) = len(possible_structures) on both Park Place and Boardwalk
+        game_instance.board[39].build_structure(game=game_instance)
+        self.assertEqual([], game_instance.board[39].list_buildable_structures(game=game_instance))
+        self.assertEqual('Build house on Park Place', game_instance.board[37].list_buildable_structures(game=game_instance)[0].option_name)
+        game_instance.board[37].build_structure(game=game_instance)
+        self.assertEqual('Build house on Park Place', game_instance.board[37].list_buildable_structures(game=game_instance)[0].option_name)
+        self.assertEqual('Build house on Boardwalk', game_instance.board[39].list_buildable_structures(game=game_instance)[0].option_name)
+        game_instance.board[37].build_structure(game=game_instance)
+        self.assertEqual([], game_instance.board[37].list_buildable_structures(game=game_instance))
+        self.assertEqual('Build house on Boardwalk', game_instance.board[39].list_buildable_structures(game=game_instance)[0].option_name)
+        game_instance.board[39].build_structure(game=game_instance)
+        self.assertEqual('Build house on Park Place', game_instance.board[37].list_buildable_structures(game=game_instance)[0].option_name)
+        self.assertEqual('Build house on Boardwalk', game_instance.board[39].list_buildable_structures(game=game_instance)[0].option_name)
+        game_instance.board[39].build_structure(game=game_instance)
+        self.assertEqual([], game_instance.board[39].list_buildable_structures(game=game_instance))
+        #Test to verify that the active player cannot afford to buy the next house
+        self.assertEqual([], game_instance.board[37].list_buildable_structures(game=game_instance))
+        game_instance.active_player.liquid_holdings += 10000
+        self.assertEqual('Build house on Park Place', game_instance.board[37].list_buildable_structures(game=game_instance)[0].option_name)
+        game_instance.board[37].build_structure(game=game_instance)
+        self.assertEqual('Build hotel on Park Place', game_instance.board[37].list_buildable_structures(game=game_instance)[0].option_name)
+        self.assertEqual('Build hotel on Boardwalk', game_instance.board[39].list_buildable_structures(game=game_instance)[0].option_name)
+        game_instance.board[37].build_structure(game=game_instance)
+        self.assertEqual('Build hotel on Boardwalk', game_instance.board[39].list_buildable_structures(game=game_instance)[0].option_name)
+        self.assertEqual([], game_instance.board[37].list_buildable_structures(game=game_instance))
+        game_instance.board[39].build_structure(game=game_instance)
+        self.assertEqual([], game_instance.board[39].list_buildable_structures(game=game_instance))
+        self.assertEqual([], game_instance.board[37].list_buildable_structures(game=game_instance))
+
+
+
 
 
 
