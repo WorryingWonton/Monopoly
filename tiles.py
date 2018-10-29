@@ -144,22 +144,19 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
 
     def complete_transaction(self, buyer, seller, amount, game):
         if self.property.mortgaged:
-            """This seems to be a grey area in the rules.  Normally, amount is just the deed price of the property, however the rules do not specify what happens if
+            """This is a grey area in the rules.  Normally, amount is just the deed price of the property, however the rules do not specify what happens if
             a mortgaged property is auctioned.  Or if, for that matter, if a mortgaged property can be auctioned.  I'm designing to the spec that a mortgaged property
             can be auctioned and the extra 10% assessed is based off the mortgage price."""
             if amount + 1.1 * self.property.mortgage_price <= buyer.liquid_holdings:
                 immediate_unmortgage_decision = game.interface.get_buy_and_lift_mortgage_decision(buyer=buyer, seller=seller, amount=amount, item=self.property)
                 if immediate_unmortgage_decision:
                     self.property.mortgaged = False
-                    buyer.liquid_holdings -= 1.1 * self.property.mortgage_price
-            buyer.liquid_holdings -= amount + 0.1*self.property.mortgage_price
-            if buyer.liquid_holdings < 0:
-                game.run_bankruptcy_process(debtor=buyer, creditor=seller)
-                return
-        else:
-            buyer.liquid_holdings -= amount
-            if buyer.liquid_holdings < 0:
-                game.run_bankruptcy_process(debtor=buyer, creditor=seller)
+                    amount = amount + 1.1 * self.property.mortgage_price
+            else:
+                amount = amount + 0.1*self.property.mortgage_price
+        if buyer.liquid_holdings < amount:
+            return game.run_bankruptcy_process(debtor=buyer, creditor=seller)
+        buyer.liquid_holdings -= amount
         seller.property_holdings.remove(self)
         buyer.property_holdings.append(self)
         seller.liquid_holdings += amount
