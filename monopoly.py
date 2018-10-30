@@ -42,7 +42,7 @@ class Monopoly:
             pass
         else:
             self.active_player.advance_position(amount=self.dice_roll[0] + self.dice_roll[1])
-        print(f'\n{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name} --- Pos: {self.active_player.position} ({self.board[self.active_player.position]}) --- {self.dice_roll} ---{[x.property.name for x in self.active_player.property_holdings]}')
+        print(f'\n---Pre Automatic Actions---{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name} --- Pos: {self.active_player.position} ({self.board[self.active_player.position]}) --- {self.dice_roll} ---{[x.property.name for x in self.active_player.property_holdings]}')
         option_list = []
         tile_options = self.board[self.active_player.position].tile_actions(game=self)
         tile_options += self.board[self.active_player.position].find_properties_of_other_players(game=self)
@@ -58,8 +58,9 @@ class Monopoly:
         player_options = self.active_player.player_actions()
         if len(player_options) > 0:
             option_list += player_options
+        print(f'\n---Post Automatic Actions---{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name} --- Pos: {self.active_player.position} ({self.board[self.active_player.position]}) --- {self.dice_roll} ---{[x.property.name for x in self.active_player.property_holdings]}')
         if len(option_list) > 0:
-            active_player_decision = monopoly_cl_interface.CLInterface(game=self).get_decision(option_list)
+            active_player_decision = self.interface.get_decision(option_list)
             self.execute_player_decision(active_player_decision)
         return self.check_for_doubles()
 
@@ -106,13 +107,13 @@ class Monopoly:
 
     def run_bank_auction(self):
         for tile in self.bank.property_holdings:
-            winning_bid = monopoly_cl_interface.CLInterface(game=self).run_auction(item=tile.property, seller=self.bank)
+            winning_bid = self.interface.run_auction(item=tile.property, seller=self.bank)
             if winning_bid:
                 tile.complete_transaction(buyer=winning_bid[0], seller=self.bank, amount=winning_bid[1])
         for card in self.bank.hand:
-            winning_bid = monopoly_cl_interface.CLInterface(game=self).run_auction(item=card, seller=self.bank)
+            winning_bid = self.interface.run_auction(item=card, seller=self.bank)
             if winning_bid:
-                card.complete_transaction(buyer=winning_bid[0], seller=self.bank, amoun=winning_bid[1])
+                card.complete_transaction(buyer=winning_bid[0], seller=self.bank, amount=winning_bid[1], game=self)
         self.bank.property_holdings = []
         self.bank.hand = []
 
