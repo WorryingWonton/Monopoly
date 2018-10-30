@@ -37,8 +37,6 @@ class TestJailTile(unittest.TestCase):
     pass
 
 
-
-
 class TestColorTile(unittest.TestCase):
 
     def test_determine_if_buildable(self):

@@ -296,7 +296,7 @@ class GoToJailTile(UnownableTile):
 
     def tile_actions(self, game):
         game.active_player.go_directly_to_jail()
-        return []
+        return game.board[game.active_player.position].tile_actions(game=game)
 
 
 @attr.s
