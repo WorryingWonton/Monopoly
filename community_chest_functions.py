@@ -12,17 +12,17 @@ def get_tile_positions(game, target=None, name=None):
 def advance_to_go(game):
     tile_position = get_tile_positions(target=GoTile, game=game)
     game.active_player.position = tile_position[0]
-    game.board[game.active_player.position].tile_actions(game=game)
+    return game.board[game.active_player.position].tile_actions(game=game)
 
 def go_to_jail(game):
     game.active_player.go_directly_to_jail()
-    game.board[game.active_player.position].tile_actions(game=game)
+    return game.board[game.active_player.position].tile_actions(game=game)
 
 def get_out_jail_free(game):
     game.active_player.jailed = False
     game.dice_roll = game.roll_dice()
     game.active_player.advance_position(amount=sum(game.dice_roll))
-    game.board[game.active_player.position].tile_actions(game=game)
+    return game.board[game.active_player.position].tile_actions(game=game)
 
 def bank_error_in_your_favor(game):
     game.active_player.liquid_holdings += 250

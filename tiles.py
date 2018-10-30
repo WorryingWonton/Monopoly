@@ -279,7 +279,9 @@ class ChanceTile(CardTile):
 
     def tile_actions(self, game):
         game.chance_deck.deal_from_deck(game=game)
-        game.active_player.dealt_card.consume_card(game=game)
+        action = game.active_player.dealt_card.consume_card(game=game)
+        if action:
+            return action
         return []
 
 
@@ -288,7 +290,9 @@ class CommunityChestTile(CardTile):
 
     def tile_actions(self, game):
         game.community_deck.deal_from_deck(game=game)
-        game.active_player.dealt_card.consume_card(game=game)
+        action = game.active_player.dealt_card.consume_card(game=game)
+        if action:
+            return action
         return []
 
 
