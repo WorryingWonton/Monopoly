@@ -256,7 +256,7 @@ class JailTile(UnownableTile):
                     option_list.append(monopoly.Option(option_name=f'Use {card.name} card from {card.parent_deck}', action=card.action, item_name=card.name))
             game.active_player.jailed_turns += 1
         else:
-            game.active_player.pay_jail_fine()
+            self.pay_jail_fine(game=game)
         return option_list
 
     def pay_jail_fine(self, game):

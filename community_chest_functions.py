@@ -15,8 +15,7 @@ def advance_to_go(game):
     game.board[game.active_player.position].tile_actions(game=game)
 
 def go_to_jail(game):
-    game.active_player.jailed = True
-    game.active_player.position = get_tile_positions(game=game, target=JailTile)[0]
+    game.active_player.go_directly_to_jail()
     game.board[game.active_player.position].tile_actions(game=game)
 
 def get_out_jail_free(game):

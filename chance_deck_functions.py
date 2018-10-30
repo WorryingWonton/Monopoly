@@ -48,9 +48,7 @@ def bank_pays_you_50_dividend(game):
     game.active_player.liquid_holdings += 50
 
 def get_out_jail_free(game):
-    game.active_player.jailed = False
-    game.dice_roll = game.roll_dice()
-    game.active_player.advance_position(amount=sum(game.dice_roll))
+    game.active_player.go_directly_to_jail()
     game.board[game.active_player.position].tile_actions(game=game)
 
 def go_back_3_spaces(game):
