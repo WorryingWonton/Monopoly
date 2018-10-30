@@ -244,17 +244,17 @@ class JailTile(UnownableTile):
         If the active_player has been in jail for three turns, tile_actions() calls active_player.pay_jail_fine() method and returns an empty list.
         """
         option_list = []
-        dice_roll = game.roll_dice()
         if game.active_player.jailed_turns < 3:
-            if dice_roll[0] == dice_roll[1]:
-                game.active_player.advance_position(amount=sum(dice_roll))
-                game.dice_roll = dice_roll
+            if game.check_for_doubles():
+                game.active_player.jailed_turns = 0
+                game.active_player.advance_position(amount=sum(game.dice_roll))
                 return game.board[game.active_player.position].tile_actions(game=game)
             if game.active_player.liquid_holdings >= 50 and game.active_player.jailed:
                 option_list.append(monopoly.Option(option_name='Pay Jail Fine ($50)', item_name=None, action=self.pay_jail_fine))
             for card in game.active_player.hand:
                 if card.name == 'Get out of Jail Free' and game.active_player.jailed:
                     option_list.append(monopoly.Option(option_name=f'Use {card.name} card from {card.parent_deck}', action=card.action, item_name=card.name))
+            game.active_player.jailed_turns += 1
         else:
             game.active_player.pay_jail_fine()
         return option_list
@@ -264,6 +264,7 @@ class JailTile(UnownableTile):
         if game.active_player.liquid_holdings < 0:
             self.game.run_bankruptcy_process(debtor=game.active_player, creditor=game.bank)
         else:
+            game.active_player.jailed_turns = 0
             game.active_player.jailed = False
             game.active_player.position = sum(game.roll_dice())
 
@@ -367,14 +368,14 @@ class ColorTile(OwnableTile):
 
     def if_owned(self, owner, game):
         if owner == game.active_player:
-            structure_options = self.list_buildable_structures(game=game)
+            structure_options = self.list_buildable_structures(game=game) + self.list_removable_structures(game=game)
             return structure_options + self.determine_if_sellable(owner=owner)
         else:
             self.assess_rent(owner=owner, game=game)
             return []
 
     def assess_rent(self, game, owner):
-        if len(self.property.existing_structures) == 0:
+        if not self.property.existing_structures:
             rent = self.property.base_rent
         else:
             rent = self.property.existing_structures[-1].rent
