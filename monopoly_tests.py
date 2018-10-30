@@ -36,6 +36,24 @@ class TestJailTile(unittest.TestCase):
     """
     pass
 
+class TestBankruptcyHandling(unittest.TestCase):
+    def test_bankruptcy_from_rent_assessed(self):
+        game = monopoly.Monopoly()
+        game.add_player('Bill')
+        game.add_player('Bob')
+        game.add_player('Sam')
+        #Give bill BoardWalk and ParkPlace, and build all structures on both
+        game.players[0].property_holdings += [game.board[39], game.board[37]]
+        game.board[39].property.existing_structures = game.board[39].property.possible_structures
+        game.board[37].property.existing_structures = game.board[37].property.possible_structures
+        #Move Bob onto BoardWalk and assess rent on Bob (This will reduce Bob's liquid holdings by 2000, causing game.run_bankruptcy_process() to be triggered)
+        game.active_player = game.players[1]
+        game.players[1].position = 39
+        game.board[39].tile_actions(game=game)
+        self.assertEqual(2, len(game.players))
+        self.assertEqual('Bob', game.active_player.name)
+        self.assertEqual(None, game.active_player)
+
 
 class TestColorTile(unittest.TestCase):
 
