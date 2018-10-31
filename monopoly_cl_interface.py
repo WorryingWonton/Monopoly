@@ -173,11 +173,11 @@ in which players are added to it.
         while len(self.game.players) < 6:
             player_name = input(f'''
     To stop entering players, type \'stop\'.
-    What is Player {len(self.game.players) + 1}\'s name?  ''')
+    What is Player {len(self.game.all_players) + 1}\'s name?  ''')
             if player_name.lower() == 'stop':
-                if len(self.game.players) < 2:
+                if len(self.game.all_players) < 2:
                     raise Exception('Not enough players in the game to start.')
                 else:
                     break
             else:
-                self.game.players.append(Player(name=player_name, game=self.game))
+                self.game.add_player(name=player_name)

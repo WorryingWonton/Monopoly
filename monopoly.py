@@ -3,16 +3,18 @@ import random
 from functools import reduce
 import cards
 import board
+from itertools import cycle
+
 
 class Monopoly:
 
     def __init__(self, interface=None):
         self.players = []
+        self.all_players = []
         self.board = board.Board().board
         self.chance_deck = cards.ChanceDeck()
         self.community_deck = cards.CommunityChest()
         self.active_player = None
-        self.generator = self.next_player_generator()
         self.turns = 0
         self.bank = Bank(game=self)
         self.dice_roll = None
@@ -22,16 +24,25 @@ class Monopoly:
             self.interface = interface
 
     def add_player(self, name):
-        self.players.append(Player(name, game=self))
+        self.all_players.append(Player(name, game=self))
 
-    def next_player_generator(self):
-        while True:
-            for i in range(len(self.players)):
-                if i in range(len(self.players)):
-                    player = self.players[i]
-                else:
-                    break
-                yield player
+    def remove_player(self, player):
+        player.in_game = False
+        if player != self.active_player:
+            self.generate_in_game_players()
+
+    def generate_in_game_players(self):
+        self.players = [player for player in self.all_players if player.in_game]
+
+    def set_active_player(self):
+        if not self.active_player:
+            self.active_player = self.all_players[0]
+        else:
+            player_iterator = cycle(self.players)
+            while next(player_iterator) != self.active_player:
+                pass
+            self.active_player = next(player_iterator)
+        self.generate_in_game_players()
 
     def roll_dice(self):
         return (random.randint(1, 6), random.randint(1, 6))
@@ -70,17 +81,16 @@ class Monopoly:
 
     def run_game(self):
         doubles = False
+        self.generate_in_game_players()
         while len(self.players) > 1:
             if doubles:
                 self.active_player.consecutive_turns += 1
                 if self.active_player.consecutive_turns == 3:
                     self.active_player.consecutive_turns = 0
                     self.active_player.go_directly_to_jail()
-                    self.active_player = next(self.generator)
-                    doubles = False
-                    continue
+                    self.set_active_player()
             else:
-                self.active_player = next(self.generator)
+                self.set_active_player()
                 self.active_player.consecutive_turns = 0
             self.advance_turn()
             doubles = self.run_turn()
@@ -101,7 +111,7 @@ class Monopoly:
                 #Remove all structures after sale to bank
             tile.property.existing_structures = []
             creditor.property_holdings.append(tile)
-        self.players.remove(debtor)
+        self.remove_player(debtor)
         if creditor == self.bank:
             self.run_bank_auction()
 
@@ -148,6 +158,7 @@ class Player:
         self.hand = []
         self.game = game
         self.dealt_card = None
+        self.in_game = True
 
     def player_actions(self):
         return self.generate_card_options()
