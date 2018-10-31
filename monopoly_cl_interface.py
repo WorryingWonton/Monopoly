@@ -170,7 +170,7 @@ This game has two notable exceptions to the normal rules of Monopoly:
 To start, enter the names of the participants below.  The turn order for the game is based on the order
 in which players are added to it.
 """)
-        while len(self.game.players) < 6:
+        while len(self.game.all_players) < 6:
             player_name = input(f'''
     To stop entering players, type \'stop\'.
     What is Player {len(self.game.all_players) + 1}\'s name?  ''')

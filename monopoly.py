@@ -5,7 +5,6 @@ import cards
 import board
 from itertools import cycle
 
-
 class Monopoly:
 
     def __init__(self, interface=None):
