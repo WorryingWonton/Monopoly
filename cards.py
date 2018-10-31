@@ -57,11 +57,11 @@ class Card(ownable_item.OwnableItem):
                 self.complete_transaction(buyer=winning_bid[0], seller=game.active_player, amount=winning_bid[1], game=game)
 
     def consume_card(self, game):
-        self.action(game=game)
         if self.parent_deck == 'Chance Deck':
             game.chance_deck.append(self)
         if self.parent_deck == 'Community Chest':
             game.community_chest.append(self)
+        return self.action(game=game)
 
 
 @attr.s
