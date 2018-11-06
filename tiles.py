@@ -310,12 +310,11 @@ class GoToJailTile(UnownableTile):
 @attr.s
 class LuxuryTaxTile(UnownableTile):
 
-    def tile_actions(self, game):
+    def perform_auto_actions(self, game):
         if game.active_player.liquid_holdings >= 75:
             game.active_player.liquid_holdings -= 75
         else:
             game.run_bankruptcy_process(creditor=game.bank, debtor=game.active_player)
-        return []
 
 
 @attr.s
