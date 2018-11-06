@@ -71,20 +71,24 @@ class Monopoly:
         print(f'\n---Pre Automatic Actions---{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name} --- Pos: {self.active_player.position} ({self.board[self.active_player.position]}) --- {self.dice_roll} ---{[x.property.name for x in self.active_player.property_holdings]}')
         self.board[self.active_player.position].perform_auto_actions(game=self)
         print(f'\n---Post Automatic Actions---{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name} --- Pos: {self.active_player.position} ({self.board[self.active_player.position]}) --- {self.dice_roll} ---{[x.property.name for x in self.active_player.property_holdings]}')
-        option_list = []
-        option_list += self.board[self.active_player.position].list_options(game=self)
-        option_list += self.board[self.active_player.position].find_properties_of_other_players(game=self)
-        for tile in [tile for tile in self.active_player.property_holdings if tile.position != self.active_player.position]:
-            option_list += tile.list_options(game=self)
-        option_list += self.active_player.player_actions()
-        if len(option_list) > 0:
-            active_player_decision = self.interface.get_decision(option_list)
-            self.execute_player_decision(active_player_decision)
+        while True:
+            option_list = []
+            option_list += self.board[self.active_player.position].list_options(game=self)
+            option_list += self.board[self.active_player.position].find_properties_of_other_players(game=self)
+            for tile in [tile for tile in self.active_player.property_holdings if tile.position != self.active_player.position]:
+                option_list += tile.list_options(game=self)
+            option_list += self.active_player.player_actions()
+            if option_list:
+                active_player_decision = self.interface.get_decision(option_list)
+                if not active_player_decision:
+                    break
+                self.execute_player_decision(active_player_decision)
+            else:
+                break
         return self.check_for_doubles()
 
     def execute_player_decision(self, active_player_decision):
-        if active_player_decision:
-            active_player_decision.action(self)
+        active_player_decision.action(self)
 
     def run_game(self):
         doubles = False
