@@ -21,29 +21,27 @@ class Structure:
         self.price = price
         self.rent = rent
 
-"""
-tile_actions() breakdown:
-    Tile.perform_auto_actions(): Reads game state, modifies game state where appropriate, returns None
-    Tile.list_options():  Reads game state, returns list of Option objects
-"""
 
 @attr.s
 class Tile:
     position = attr.ib(type=int)
 
     def tile_actions(self, game):
-        """Performs all appropriate actions associated with the Tile object in play
-            Assumes active_player is on the Tile"""
-        return []
+        """
+        :param Monopoly game: Reference to the current instance of Monopoly
+        :return list:  Returns a list of options the Active Player can do while on said Tile
+        """
+        self.perform_auto_actions(game=game)
+        return self.list_options(game=game)
 
     def perform_auto_actions(self, game):
         pass
 
-    def list_otions(self, game):
+    def list_options(self, game):
         return []
 
     def find_properties_of_other_players(self, game):
-        property_tuples = [(list(filter(lambda tile: tile.determine_if_sellable(owner=player), player.property_holdings)), player) for player in list(filter(lambda player: player != game.active_player, game.players))]
+        property_tuples = [(list(filter(lambda tile: tile.list_sell_options(owner=player), player.property_holdings)), player) for player in list(filter(lambda player: player != game.active_player, game.players))]
         option_list = []
         for n_tuple in property_tuples:
             for tile in n_tuple[0]:
@@ -58,12 +56,11 @@ class Tile:
 class OwnableTile(Tile, ownable_item.OwnableItem):
     property: Property = attr.ib()
 
-    def tile_actions(self, game):
-        owner = self.find_owner(players=game.players)
-        if owner:
-            return self.if_owned(owner=owner, game=game)
-        else:
-            return self.if_not_owned(active_player=game.active_player)
+    def perform_auto_actions(self, game):
+        pass
+
+    def list_otions(self, game):
+        return []
 
     def find_owner(self, players):
         for player in players:
@@ -107,20 +104,21 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
                 num_tiles += 1
         return num_tiles
 
-    def determine_if_sellable(self, owner):
+    def list_sell_options(self, owner):
         """
         :param Player owner:  Player object who owns the tile
-        :return: Returns either an empty list or a list containing an Option object which will start the direct sale process if chosen by the player
+        :return list option_list: Returns either an empty list or a list containing an Option object which will start the direct sale process if chosen by the player
         """
-        if self in owner.property_holdings:
-            if len(self.property.existing_structures) > 0:
-                return []
-            else:
-                return [monopoly.Option(option_name=f'Sell {self.property.name}', action=self.start_direct_sale_process, item_name=self.property.name),
-                        monopoly.Option(option_name=f'Sell {self.property.name} to the Bank for {0.5 * self.property.price}', action=self.sell_to_bank, item_name=self.property.name),
-                        monopoly.Option(option_name=f'Mortgage {self.property.name} (Note: This will not permit you to develop {self.property.name} or enable you to charge rent on it)', action=self.mortgage_owned_property, item_name=self.property.name)]
-        else:
+        if self.property.existing_structures:
             return []
+        option_list = []
+        option_list.append(monopoly.Option(option_name=f'Sell {self.property.name}', action=self.start_direct_sale_process, item_name=self.property.name))
+        if self.property.mortgaged:
+            if owner.liquid_holdings >= 0.1 * self.property.price + self.property.mortgage_price:
+                option_list.append(monopoly.Option(option_name=f'Lift Mortgage on {self.property.name}', action=self.lift_mortgage, item_name=self.property.name))
+        else:
+            option_list.append(monopoly.Option(option_name=f'Mortgage {self.property.name} (Note: This will not permit you to develop {self.property.name} or enable you to charge rent on it)', action=self.mortgage_owned_property, item_name=self.property.name))
+        return option_list
 
     def sell_to_bank(self, game):
         game.active_player.liquid_holdings += self.property.price * 0.5
@@ -188,33 +186,28 @@ class UnownableTile(Tile):
 @attr.s
 class RailRoadTile(OwnableTile):
 
-    def if_owned(self, owner, game):
-        """
-        :param active_player:
-        :param owner:
-        :param Monopoly game:
-        :param dice_roll:
-        :return:
-        """
-        if game.active_player == owner:
-            sellability = self.determine_if_sellable(owner=owner)
-            if sellability:
-                if self.property.mortgaged:
-                    if game.active_player.liquid_holdings >= self.property.price * 0.1:
-                        return sellability + [monopoly.Option(option_name=f'Lift Mortgage on {self.property.name}', action=self.lift_mortgage, item_name=self.property.name)]
-                    else:
-                        return sellability + [monopoly.Option(option_name=f'Mortgage {self.propert.name}', action=self.mortgage_owned_property, item_name=self.property.name)]
-                elif game.active_player.liquid_holdings >= self.property.possible_structures[0].price:
-                    return sellability + [monopoly.Option(option_name=f'Build Transtation at {self.property.name}', action=self.build_train_station, item_name=self.property.name)]
+    def list_otions(self, game):
+        option_list = []
+        owner = self.find_owner(players=game.players)
+        if owner:
+            if owner == game.active_player:
+                sell_options = self.list_sell_options(owner=owner)
+                option_list += sell_options
+                if sell_options and not self.property.mortgaged and owner.liquid_holdings <= self.property.possible_structures[0].price:
+                    option_list.append(monopoly.Option(option_name=f'Build Transtation at {self.property.name}', action=self.build_train_station, item_name=self.property.name))
                 else:
-                    return sellability
-            else:
-                return [monopoly.Option(option_name=f'Sell Trainstation at {self.property.name} to the Bank for {0.5*self.property.existing_structures[0].price}', action=self.remove_structure, item_name=self.property.existing_structures[0].type)]
-        elif self.property.mortgaged:
-            return []
+                    option_list.append(monopoly.Option(option_name=f'Sell Trainstation at {self.property.name} to the Bank for {0.5*self.property.existing_structures[0].price}', action=self.remove_structure, item_name=self.property.existing_structures[0].type))
         else:
-            self.assess_rent(owner=owner, game=game)
-            return []
+            option_list.append(self.if_not_owned(active_player=game.active_player))
+        return option_list
+
+    def perform_auto_actions(self, game):
+        owner = self.find_owner(players=game.players)
+        if owner:
+            if owner == game.active_player:
+                return
+            else:
+                self.assess_rent(owner=owner, game=game)
 
     def assess_rent(self, owner, game):
         num_owned_railroads = self.count_similar_owned_properties(owner)
@@ -356,7 +349,7 @@ class UtilityTile(OwnableTile):
 
     def if_owned(self, owner, game):
         if owner == game.active_player:
-            return self.determine_if_sellable(owner=owner)
+            return self.list_sell_options(owner=owner)
         elif self.property.mortgaged:
             return []
         else:
@@ -384,7 +377,7 @@ class ColorTile(OwnableTile):
     def if_owned(self, owner, game):
         if owner == game.active_player:
             structure_options = self.list_buildable_structures(game=game) + self.list_removable_structures(game=game)
-            return structure_options + self.determine_if_sellable(owner=owner)
+            return structure_options + self.list_sell_options(owner=owner)
         else:
             self.assess_rent(owner=owner, game=game)
             return []
