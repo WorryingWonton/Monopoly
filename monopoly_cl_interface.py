@@ -163,10 +163,8 @@ Once two or more players have been added, the game can start.
 The game will run until all but one player has been bankrupted.
 Command Line Monopoly attempts to follow the rules for Monopoly as specified in:
 https://www.hasbro.com/common/instruct/monins.pdf
-This game has two notable exceptions to the normal rules of Monopoly:
-    1.  Only one action may be performed per turn
-    2.  Because only a single action may be performed per turn, not buying an unowned property will NOT put the property
-        up for auction
+This game has one notable exceptions to the normal rules of Monopoly:
+    1.  Not opting to buy an unowned property during a turn will NOT result in it being put up for auction.
 To start, enter the names of the participants below.  The turn order for the game is based on the order
 in which players are added to it.
 """)
