@@ -66,27 +66,17 @@ class Monopoly:
 
     def run_turn(self):
         self.dice_roll = self.roll_dice()
-        if self.active_player.jailed:
-            pass
-        else:
+        if not self.active_player.jailed:
             self.active_player.advance_position(amount=self.dice_roll[0] + self.dice_roll[1])
         print(f'\n---Pre Automatic Actions---{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name} --- Pos: {self.active_player.position} ({self.board[self.active_player.position]}) --- {self.dice_roll} ---{[x.property.name for x in self.active_player.property_holdings]}')
-        option_list = []
-        tile_options = self.board[self.active_player.position].tile_actions(game=self)
-        tile_options += self.board[self.active_player.position].find_properties_of_other_players(game=self)
-        if tile_options:
-            for tile in self.active_player.property_holdings:
-                if tile.position == self.active_player.position:
-                    continue
-                options = tile.tile_actions(game=self)
-                if options:
-                    for option in options:
-                        tile_options.append(option)
-            option_list += tile_options
-        player_options = self.active_player.player_actions()
-        if len(player_options) > 0:
-            option_list += player_options
+        self.board[self.active_player.position].perform_auto_actions(game=self)
         print(f'\n---Post Automatic Actions---{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name} --- Pos: {self.active_player.position} ({self.board[self.active_player.position]}) --- {self.dice_roll} ---{[x.property.name for x in self.active_player.property_holdings]}')
+        option_list = []
+        option_list += self.board[self.active_player.position].list_options(game=self)
+        option_list += self.board[self.active_player.position].find_properties_of_other_players(game=self)
+        for tile in [tile for tile in self.active_player.property_holdings if tile.position != self.active_player.position]:
+            option_list += tile.list_options(game=self)
+        option_list += self.active_player.player_actions()
         if len(option_list) > 0:
             active_player_decision = self.interface.get_decision(option_list)
             self.execute_player_decision(active_player_decision)

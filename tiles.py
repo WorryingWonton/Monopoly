@@ -67,7 +67,7 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
             else:
                 self.assess_rent(owner=owner, game=game)
 
-    def list_otions(self, game):
+    def list_options(self, game):
         return []
 
     def find_owner(self, players):
@@ -203,7 +203,7 @@ class RailRoadTile(OwnableTile):
                 else:
                     option_list.append(monopoly.Option(option_name=f'Sell Trainstation at {self.property.name} to the Bank for {0.5*self.property.existing_structures[0].price}', action=self.remove_structure, item_name=self.property.existing_structures[0].type))
         else:
-            option_list.append(self.if_not_owned(active_player=game.active_player))
+            option_list += self.if_not_owned(active_player=game.active_player)
         return option_list
 
     def assess_rent(self, owner, game):
@@ -242,8 +242,8 @@ class JailTile(UnownableTile):
                     option_list.append(monopoly.Option(option_name=f'Use {card.name} card from {card.parent_deck}', action=card.action, item_name=card.name))
             if game.active_player.liquid_holdings >= 50:
                 option_list.append(monopoly.Option(option_name='Pay Jail Fine ($50)', item_name=None, action=self.pay_jail_fine))
-        else:
-            option_list += game.board[game.active_player.position].list_options()
+        if game.active_player.position != self.position:
+            option_list += game.board[game.active_player.position].list_options(game=game)
         return option_list
 
     def perform_auto_actions(self, game):
@@ -344,11 +344,13 @@ class UtilityTile(OwnableTile):
 
     def list_options(self, game):
         owner = self.find_owner(game.players)
+        option_list = []
         if owner:
             if owner == game.active_player:
-                return self.list_sell_options(owner=owner)
+                option_list += self.list_sell_options(owner=owner)
         else:
-            return self.if_not_owned(active_player=game.active_player)
+            option_list += self.if_not_owned(active_player=game.active_player)
+        return option_list
 
     def assess_rent(self, owner, game):
         num_owned_utilites = self.count_similar_owned_properties(owner)
@@ -370,11 +372,13 @@ class ColorTile(OwnableTile):
 
     def list_options(self, game):
         owner = self.find_owner(players=game.players)
+        option_list = []
         if owner:
             if owner == game.active_player:
-                return self.list_sell_options(owner=owner) + self.list_buildable_structures(game=game) + self.list_removable_structures(game=game)
+                option_list += self.list_sell_options(owner=owner) + self.list_buildable_structures(game=game) + self.list_removable_structures(game=game)
         else:
-            return self.if_not_owned(active_player=game.active_player)
+            option_list += self.if_not_owned(active_player=game.active_player)
+        return option_list
 
     def assess_rent(self, game, owner):
         if not self.property.existing_structures:
