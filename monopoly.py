@@ -67,7 +67,7 @@ class Monopoly:
     def run_turn(self):
         self.dice_roll = self.roll_dice()
         if not self.active_player.jailed:
-            self.active_player.advance_position(amount=self.dice_roll[0] + self.dice_roll[1])
+            self.active_player.advance_position(amount=sum(self.dice_roll))
         print(f'\n---Pre Automatic Actions---{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name} --- Pos: {self.active_player.position} ({self.board[self.active_player.position]}) --- {self.dice_roll} ---{[x.property.name for x in self.active_player.property_holdings]}')
         self.board[self.active_player.position].perform_auto_actions(game=self)
         print(f'\n---Post Automatic Actions---{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name} --- Pos: {self.active_player.position} ({self.board[self.active_player.position]}) --- {self.dice_roll} ---{[x.property.name for x in self.active_player.property_holdings]}')
@@ -93,7 +93,12 @@ class Monopoly:
     def run_game(self):
         doubles = False
         self.generate_in_game_players()
+        self.chance_deck.shuffle_deck()
+        self.community_deck.shuffle_deck()
         while len(self.players) > 1:
+            if self.turns % 10 == 0:
+                self.chance_deck.shuffle_deck()
+                self.community_deck.shuffle_deck()
             if doubles:
                 self.active_player.consecutive_turns += 1
                 if self.active_player.consecutive_turns == 3:

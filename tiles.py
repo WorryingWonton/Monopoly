@@ -282,7 +282,8 @@ class ChanceTile(CardTile):
         game.active_player.dealt_card.consume_card(game=game)
 
     def list_options(self, game):
-        return game.board[game.active_player.position].list_options(game=game)
+        if self.position != game.active_player.position:
+            return game.board[game.active_player.position].list_options(game=game)
 
 @attr.s
 class CommunityChestTile(CardTile):
@@ -292,7 +293,8 @@ class CommunityChestTile(CardTile):
         game.active_player.dealt_card.consume_card(game=game)
 
     def list_options(self, game):
-        return game.board[game.active_player.position].list_options(game=game)
+        if self.position != game.active_player.position:
+            return game.board[game.active_player.position].list_options(game=game)
 
 
 @attr.s
