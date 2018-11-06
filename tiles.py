@@ -184,7 +184,7 @@ class UnownableTile(Tile):
 @attr.s
 class RailRoadTile(OwnableTile):
 
-    def list_otions(self, game):
+    def list_options(self, game):
         option_list = []
         owner = self.find_owner(players=game.players)
         if owner:
@@ -321,6 +321,7 @@ class LuxuryTaxTile(UnownableTile):
 class FreeParking(UnownableTile):
     pass
 
+
 @attr.s
 class IncomeTaxTile(UnownableTile):
 
@@ -330,6 +331,7 @@ class IncomeTaxTile(UnownableTile):
             game.active_player.liquid_holdings -= floor(.1 * gross_worth)
         else:
             game.active_player.liquid_holdings -= 200
+
 
 @attr.s
 class GoTile(UnownableTile):
@@ -341,14 +343,20 @@ class GoTile(UnownableTile):
 @attr.s
 class UtilityTile(OwnableTile):
 
-    def if_owned(self, owner, game):
+    def perform_auto_actions(self, game):
+        if self.property.mortgaged:
+            return
+        else:
+            owner = self.find_owner(game.players)
+            if owner == game.active_player:
+                return
+            else:
+                self.assess_rent(owner=owner, game=game)
+
+    def list_options(self, game):
+        owner = self.find_owner(game.players)
         if owner == game.active_player:
             return self.list_sell_options(owner=owner)
-        elif self.property.mortgaged:
-            return []
-        else:
-            self.assess_rent(owner=owner, game=game)
-            return []
 
     def assess_rent(self, owner, game):
         num_owned_utilites = self.count_similar_owned_properties(owner)
