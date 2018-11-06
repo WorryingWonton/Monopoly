@@ -298,9 +298,12 @@ class CommunityChestTile(CardTile):
 @attr.s
 class GoToJailTile(UnownableTile):
 
-    def tile_actions(self, game):
+    def perform_auto_actions(self, game):
         game.active_player.go_directly_to_jail()
-        return game.board[game.active_player.position].tile_actions(game=game)
+        game.board[game.active_player.position].perform_auto_actions(game=game)
+
+    def list_options(self, game):
+        return game.board[game.active_player.position].list_options(game=game)
 
 
 @attr.s
