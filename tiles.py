@@ -277,23 +277,22 @@ class CardTile(UnownableTile):
 @attr.s
 class ChanceTile(CardTile):
 
-    def tile_actions(self, game):
+    def perform_auto_actions(self, game):
         game.chance_deck.deal_from_deck(game=game)
-        action = game.active_player.dealt_card.consume_card(game=game)
-        if action:
-            return action
-        return []
+        game.active_player.dealt_card.consume_card(game=game)
 
+    def list_options(self, game):
+        return game.board[game.active_player.position].list_options(game=game)
 
 @attr.s
 class CommunityChestTile(CardTile):
 
-    def tile_actions(self, game):
+    def perform_auto_actions(self, game):
         game.community_deck.deal_from_deck(game=game)
-        action = game.active_player.dealt_card.consume_card(game=game)
-        if action:
-            return action
-        return []
+        game.active_player.dealt_card.consume_card(game=game)
+
+    def list_options(self, game):
+        return game.board[game.active_player.position].list_options(game=game)
 
 
 @attr.s
@@ -319,7 +318,6 @@ class LuxuryTaxTile(UnownableTile):
 class FreeParking(UnownableTile):
     pass
 
-
 @attr.s
 class IncomeTaxTile(UnownableTile):
 
@@ -330,7 +328,6 @@ class IncomeTaxTile(UnownableTile):
         else:
             game.active_player.liquid_holdings -= 200
         return []
-
 
 @attr.s
 class GoTile(UnownableTile):

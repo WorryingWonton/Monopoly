@@ -42,6 +42,7 @@ class TestBankruptcyHandling(unittest.TestCase):
         game.add_player('Bill')
         game.add_player('Bob')
         game.add_player('Sam')
+        game.generate_in_game_players()
         #Give bill BoardWalk and ParkPlace, and build all structures on both
         game.players[0].property_holdings += [game.board[39], game.board[37]]
         game.board[39].property.existing_structures = game.board[39].property.possible_structures
@@ -65,6 +66,7 @@ class TestColorTile(unittest.TestCase):
         """
         game_instance = monopoly.Monopoly()
         game_instance.add_player('Bob')
+        game_instance.generate_in_game_players()
         game_instance.active_player = game_instance.players[0]
         game_instance.players[0].property_holdings.append(game_instance.board[37])
         #Case 1:  Player does not have all tiles within a color-set
@@ -77,6 +79,7 @@ class TestColorTile(unittest.TestCase):
         game_instance = monopoly.Monopoly()
         #Add a player, add both blue properties to the player's property goldings
         game_instance.add_player(name='Alan')
+        game_instance.generate_in_game_players()
         game_instance.active_player = game_instance.players[0]
         game_instance.players[0].property_holdings.append(game_instance.board[37])
         game_instance.players[0].property_holdings.append(game_instance.board[39])
@@ -123,6 +126,7 @@ class TestColorTile(unittest.TestCase):
     def test_list_removable_structures(self):
         game_instance = monopoly.Monopoly()
         game_instance.add_player('Bill')
+        game_instance.generate_in_game_players()
         game_instance.active_player = game_instance.players[0]
         game_instance.active_player.property_holdings = [tile for tile in game_instance.board if isinstance(tile, tiles.ColorTile) and tile.color == 'green']
         for tile in game_instance.active_player.property_holdings:

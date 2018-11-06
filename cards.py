@@ -61,7 +61,7 @@ class Card(ownable_item.OwnableItem):
             game.chance_deck.append(self)
         if self.parent_deck == 'Community Chest':
             game.community_chest.append(self)
-        return self.action(game=game)
+        self.action(game=game)
 
 
 @attr.s

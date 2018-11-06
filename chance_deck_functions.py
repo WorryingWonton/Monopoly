@@ -12,17 +12,17 @@ def get_tile_positions(game, target=None, name=None):
 def advance_to_go(game):
     tile_position = get_tile_positions(target=GoTile, game=game)
     game.active_player.position = tile_position[0]
-    return game.board[game.active_player.position].tile_actions(game=game)
+    game.board[game.active_player.position].perform_auto_actions(game=game)
 
 def advance_to_illinois_ave(game):
     tile_position = get_tile_positions(name='Illinois Avenue', game=game)
     game.active_player.advance_position(amount=game.active_player.compute_advancement_amount(target_position=tile_position))
-    return game.board[game.active_player.position].tile_actions(game=game)
+    game.board[game.active_player.position].perform_auto_actions(game=game)
 
 def advance_to_st_charles_place(game):
     tile_position = get_tile_positions(name='Illinois Avenue', game=game)
     game.active_player.advance_position(amount=game.active_player.compute_advancement_amount(target_position=tile_position))
-    return game.board[game.active_player.position].tile_actions(game=game)
+    game.board[game.active_player.position].perform_auto_actions(game=game)
 
 def advance_to_nearest_utility(game):
     utility_tile_positions = get_tile_positions(game=game, target=UtilityTile)
@@ -32,7 +32,7 @@ def advance_to_nearest_utility(game):
     else:
         game.active_player.advance_position(amount=game.active_player.compute_advancement_amount(target_position=nearest_tile_positions[0]))
     game.dice_roll = game.roll_dice()
-    game.board[game.active_player.position].tile_actions(game=game)
+    game.board[game.active_player.position].perform_auto_actions(game=game)
 
 def advance_token_to_nearset_railroad(game):
     railroad_tile_positions = get_tile_positions(game=game, target=RailRoadTile)
@@ -42,23 +42,23 @@ def advance_token_to_nearset_railroad(game):
         game.active_player.pass_go()
     else:
         game.active_player.position = nearest_tile_positions[0]
-    game.board[game.active_player.position].tile_actions(game=game)
+    game.board[game.active_player.position].perform_auto_actions(game=game)
 
 def bank_pays_you_50_dividend(game):
     game.active_player.liquid_holdings += 50
 
 def get_out_jail_free(game):
     game.active_player.go_directly_to_jail()
-    game.board[game.active_player.position].tile_actions(game=game)
+    game.board[game.active_player.position].perform_auto_actions(game=game)
 
 def go_back_3_spaces(game):
     game.active_player.advance_position(amount=-3)
-    game.board[game.active_player.position].tile_actions(game=game)
+    game.board[game.active_player.position].perform_auto_actions(game=game)
 
 def go_to_jail(game):
     game.active_player.jailed = True
     game.active_player.position = get_tile_positions(game=game, target=JailTile)[0]
-    game.board[game.active_player.position].tile_actions(game=game)
+    game.board[game.active_player.position].perform_auto_actions(game=game)
 
 def make_general_repairs_on_all_property(game):
     color_tiles = [tile for tile in game.active_player.property_holdings if isinstance(tile, ColorTile) and len(tile.property.existing_structures) > 0]
@@ -83,12 +83,12 @@ def pay_poor_tax(game):
 def take_trip_to_reading_railroad(game):
     rrr_pos = get_tile_positions(name='Reading Railroad', game=game)
     game.active_player.advance_position(amount=game.active_player.compute_advancement_amount(target_position=rrr_pos))
-    return game.board[game.active_player.position].tile_actions()
+    return game.board[game.active_player.position].perform_auto_actions(game=game)
 
 def take_a_walk_on_boardwalk(game):
     bw_pos = get_tile_positions(name='Boardwalk', game=game)
     game.active_player.advance_position(amount=game.active_player.compute_advancement_amount(target_position=bw_pos))
-    return game.board[game.active_player.position].tile_actions()
+    return game.board[game.active_player.position].perform_auto_actions(game=game)
 
 def chairman_of_the_board(game):
     non_active_players = [player for player in game.players if player != game.active_player]
