@@ -69,9 +69,6 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
                     return player
         return None
 
-    def if_owned(self, owner, game):
-        pass
-
     def if_not_owned(self, active_player):
         buy_mortgage_option_list = []
         if self.property.price <= active_player.liquid_holdings:
@@ -237,31 +234,29 @@ class RailRoadTile(OwnableTile):
 @attr.s
 class JailTile(UnownableTile):
 
-    def tile_actions(self, game):
-        """
-        :param Monopoly game: Reference to the instance of Monopoly
-        :return list option_list: List containing either zero or one Option objects
-        JailTile is an interesting class, in that much of the behavior that relates to it is carried out in the Player class
-        or Monopoly class.  The tile_actions method for JailTile performs a dice_roll on the player, if the player lands doubles,
-        they are freed from jail.  If they do not, then it checks to see if their liquid_holdings are greater than $50.  It also checks
-        to see if the active_player has a Get Out of Jail Free card.  It then returns a list containing the applicable Option objects.
-        If the active_player has been in jail for three turns, tile_actions() calls active_player.pay_jail_fine() method and returns an empty list.
-        """
+    def list_options(self, game):
         option_list = []
+        if game.active_player.jailed:
+            for card in game.active_player.hand:
+                if card.name == 'Get out of Jail Free':
+                    option_list.append(monopoly.Option(option_name=f'Use {card.name} card from {card.parent_deck}', action=card.action, item_name=card.name))
+            if game.active_player.liquid_holdings >= 50:
+                option_list.append(monopoly.Option(option_name='Pay Jail Fine ($50)', item_name=None, action=self.pay_jail_fine))
+        else:
+            option_list += game.board[game.active_player.position].list_options()
+        return option_list
+
+    def perform_auto_actions(self, game):
         if game.active_player.jailed_turns < 3:
             if game.check_for_doubles():
                 game.active_player.jailed_turns = 0
+                game.active_player.jailed = False
                 game.active_player.advance_position(amount=sum(game.dice_roll))
-                return game.board[game.active_player.position].tile_actions(game=game)
-            if game.active_player.liquid_holdings >= 50 and game.active_player.jailed:
-                option_list.append(monopoly.Option(option_name='Pay Jail Fine ($50)', item_name=None, action=self.pay_jail_fine))
-            for card in game.active_player.hand:
-                if card.name == 'Get out of Jail Free' and game.active_player.jailed:
-                    option_list.append(monopoly.Option(option_name=f'Use {card.name} card from {card.parent_deck}', action=card.action, item_name=card.name))
-            game.active_player.jailed_turns += 1
+                game.board[game.active_player.position].perform_auto_actions(game=game)
+            else:
+                game.active_player.jailed_turns += 1
         else:
             self.pay_jail_fine(game=game)
-        return option_list
 
     def pay_jail_fine(self, game):
         game.active_player.liquid_holdings -= 50
@@ -271,6 +266,7 @@ class JailTile(UnownableTile):
             game.active_player.jailed_turns = 0
             game.active_player.jailed = False
             game.active_player.position = sum(game.roll_dice())
+            game.board[game.active_player.position].perform_auto_actions(game=game)
 
 
 @attr.s
