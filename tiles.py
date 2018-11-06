@@ -1,6 +1,7 @@
 import attr
 import monopoly
 import ownable_item
+from math import floor
 
 class Property:
 
@@ -324,20 +325,18 @@ class FreeParking(UnownableTile):
 @attr.s
 class IncomeTaxTile(UnownableTile):
 
-    def tile_actions(self, game):
+    def perform_auto_actions(self, game):
         gross_worth = game.active_player.find_gross_worth()
         if gross_worth <= 2000:
-            game.active_player.liquid_holdings -= .1 * gross_worth
+            game.active_player.liquid_holdings -= floor(.1 * gross_worth)
         else:
             game.active_player.liquid_holdings -= 200
-        return []
 
 @attr.s
 class GoTile(UnownableTile):
 
-    def tile_actions(self, game):
+    def perform_auto_actions(self, game):
         game.active_player.pass_go()
-        return []
 
 
 @attr.s
