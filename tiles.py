@@ -21,6 +21,11 @@ class Structure:
         self.price = price
         self.rent = rent
 
+"""
+tile_actions() breakdown:
+    Tile.perform_auto_actions(): Reads game state, modifies game state where appropriate, returns None
+    Tile.list_options():  Reads game state, returns list of Option objects
+"""
 
 @attr.s
 class Tile:
@@ -29,6 +34,12 @@ class Tile:
     def tile_actions(self, game):
         """Performs all appropriate actions associated with the Tile object in play
             Assumes active_player is on the Tile"""
+        return []
+
+    def perform_auto_actions(self, game):
+        pass
+
+    def list_otions(self, game):
         return []
 
     def find_properties_of_other_players(self, game):
