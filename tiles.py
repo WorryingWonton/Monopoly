@@ -67,9 +67,6 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
             else:
                 self.assess_rent(owner=owner, game=game)
 
-    def list_options(self, game):
-        return []
-
     def find_owner(self, players):
         for player in players:
             for property in player.property_holdings:
@@ -200,7 +197,7 @@ class RailRoadTile(OwnableTile):
                 option_list += sell_options
                 if sell_options and not self.property.mortgaged and owner.liquid_holdings >= self.property.possible_structures[0].price:
                     option_list.append(monopoly.Option(option_name=f'Build Transtation at {self.property.name}', action=self.build_train_station, item_name=self.property.name))
-                else:
+                if self.property.existing_structures:
                     option_list.append(monopoly.Option(option_name=f'Sell Trainstation at {self.property.name} to the Bank for {0.5*self.property.existing_structures[0].price}', action=self.remove_structure, item_name=self.property.existing_structures[0].type))
         else:
             option_list += self.if_not_owned(active_player=game.active_player)
@@ -211,7 +208,7 @@ class RailRoadTile(OwnableTile):
         multiplier = 1
         if game.active_player.dealt_card:
             multiplier = 2
-        if len(self.property.existing_structures) == 1 and self.property.existing_structures[0].type == 'transtation':
+        if self.property.existing_structures:
             rent = multiplier * self.property.existing_structures[0].rent * 2**(num_owned_railroads - 1)
         else:
             rent = multiplier * self.property.base_rent * 2**(num_owned_railroads - 1)
@@ -247,16 +244,17 @@ class JailTile(UnownableTile):
         return option_list
 
     def perform_auto_actions(self, game):
-        if game.active_player.jailed_turns < 3:
-            if game.check_for_doubles():
-                game.active_player.jailed_turns = 0
-                game.active_player.jailed = False
-                game.active_player.advance_position(amount=sum(game.dice_roll))
-                game.board[game.active_player.position].perform_auto_actions(game=game)
+        if game.active_player.jailed:
+            if game.active_player.jailed_turns < 3:
+                if game.check_for_doubles():
+                    game.active_player.jailed_turns = 0
+                    game.active_player.jailed = False
+                    game.active_player.advance_position(amount=sum(game.dice_roll))
+                    game.board[game.active_player.position].perform_auto_actions(game=game)
+                else:
+                    game.active_player.jailed_turns += 1
             else:
-                game.active_player.jailed_turns += 1
-        else:
-            self.pay_jail_fine(game=game)
+                self.pay_jail_fine(game=game)
 
     def pay_jail_fine(self, game):
         game.active_player.liquid_holdings -= 50
@@ -271,7 +269,11 @@ class JailTile(UnownableTile):
 
 @attr.s
 class CardTile(UnownableTile):
-    pass
+    def list_options(self, game):
+        if self.position != game.active_player.position:
+            return game.board[game.active_player.position].list_options(game=game)
+        else:
+            return []
 
 
 @attr.s
@@ -281,9 +283,6 @@ class ChanceTile(CardTile):
         game.chance_deck.deal_from_deck(game=game)
         game.active_player.dealt_card.consume_card(game=game)
 
-    def list_options(self, game):
-        if self.position != game.active_player.position:
-            return game.board[game.active_player.position].list_options(game=game)
 
 @attr.s
 class CommunityChestTile(CardTile):
@@ -291,10 +290,6 @@ class CommunityChestTile(CardTile):
     def perform_auto_actions(self, game):
         game.community_deck.deal_from_deck(game=game)
         game.active_player.dealt_card.consume_card(game=game)
-
-    def list_options(self, game):
-        if self.position != game.active_player.position:
-            return game.board[game.active_player.position].list_options(game=game)
 
 
 @attr.s
