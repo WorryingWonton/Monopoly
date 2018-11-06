@@ -128,6 +128,7 @@ class Monopoly:
             tile.property.existing_structures = []
             creditor.property_holdings.append(tile)
         self.remove_player(debtor)
+        self.generate_in_game_players()
         if creditor == self.bank:
             self.run_bank_auction()
 
@@ -135,7 +136,7 @@ class Monopoly:
         for tile in self.bank.property_holdings:
             winning_bid = self.interface.run_auction(item=tile.property, seller=self.bank)
             if winning_bid:
-                tile.complete_transaction(buyer=winning_bid[0], seller=self.bank, amount=winning_bid[1])
+                tile.complete_transaction(buyer=winning_bid[0], seller=self.bank, amount=winning_bid[1], game=self)
         for card in self.bank.hand:
             winning_bid = self.interface.run_auction(item=card, seller=self.bank)
             if winning_bid:
