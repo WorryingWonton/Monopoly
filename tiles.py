@@ -198,7 +198,7 @@ class RailRoadTile(OwnableTile):
             if owner == game.active_player:
                 sell_options = self.list_sell_options(owner=owner)
                 option_list += sell_options
-                if sell_options and not self.property.mortgaged and owner.liquid_holdings <= self.property.possible_structures[0].price:
+                if sell_options and not self.property.mortgaged and owner.liquid_holdings >= self.property.possible_structures[0].price:
                     option_list.append(monopoly.Option(option_name=f'Build Transtation at {self.property.name}', action=self.build_train_station, item_name=self.property.name))
                 else:
                     option_list.append(monopoly.Option(option_name=f'Sell Trainstation at {self.property.name} to the Bank for {0.5*self.property.existing_structures[0].price}', action=self.remove_structure, item_name=self.property.existing_structures[0].type))
