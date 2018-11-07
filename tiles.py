@@ -77,9 +77,9 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
     def if_not_owned(self, active_player):
         buy_mortgage_option_list = []
         if self.property.price <= active_player.liquid_holdings:
-            buy_mortgage_option_list.append(monopoly.Option(option_name=f'Buy {self.property.name} at position: {self.position}', action=self.buy_property, item_name=self.property.name))
+            buy_mortgage_option_list.append(monopoly.Option(option_name=f'Buy {self.property.name} at position: {self.position} for {self.property.price}', action=self.buy_property, item_name=self.property.name))
         if self.property.mortgage_price <= active_player.liquid_holdings:
-            buy_mortgage_option_list.append(monopoly.Option(option_name=f'Mortgage {self.property.name} at position: {self.position}', action=self.mortgage_property, item_name=self.property.name))
+            buy_mortgage_option_list.append(monopoly.Option(option_name=f'Mortgage {self.property.name} at position: {self.position} for {self.property.mortgage_price}', action=self.mortgage_property, item_name=self.property.name))
         return buy_mortgage_option_list
 
     def buy_property(self, game):
@@ -120,6 +120,7 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
                 option_list.append(monopoly.Option(option_name=f'Lift Mortgage on {self.property.name}', action=self.lift_mortgage, item_name=self.property.name))
         else:
             option_list.append(monopoly.Option(option_name=f'Mortgage {self.property.name} (Note: This will not permit you to develop {self.property.name} or enable you to charge rent on it)', action=self.mortgage_owned_property, item_name=self.property.name))
+            option_list.append(monopoly.Option(option_name=f'Sell {self.property.name} to the bank for {self.property.price / 2}', action=self.sell_to_bank, item_name=self.property.name))
         return option_list
 
     def sell_to_bank(self, game):
