@@ -202,8 +202,8 @@ class Player:
     def advance_position(self, amount):
         if self.position + amount < 0:
             self.position += 40
-            if not self.jailed:
-                self.pass_go()
+        if self.position + amount > 40 and not self.jailed:
+            self.pass_go()
         self.position = (self.position + amount) % 40
 
     def go_directly_to_jail(self):

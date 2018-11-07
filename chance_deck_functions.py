@@ -20,7 +20,7 @@ def advance_to_illinois_ave(game):
     game.board[game.active_player.position].perform_auto_actions(game=game)
 
 def advance_to_st_charles_place(game):
-    tile_position = get_tile_positions(name='Illinois Avenue', game=game)
+    tile_position = get_tile_positions(name='St. Charles Place', game=game)
     game.active_player.advance_position(amount=game.active_player.compute_advancement_amount(target_position=tile_position))
     game.board[game.active_player.position].perform_auto_actions(game=game)
 

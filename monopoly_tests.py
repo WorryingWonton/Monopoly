@@ -2,6 +2,23 @@ import unittest
 import monopoly
 import tiles
 import cards
+
+def get_tile_positions(game, target=None, name=None):
+    """
+    Global helper function to find Tiles, either by Property.name or by Class reference.
+    :param game:
+    :param target:
+    :param name:
+    :return:
+    """
+    if target and name:
+        raise Exception('Cannot search for both an instance of a Tile and the name of the Property on a Tile, pass one or the other.')
+    if target:
+        return [tile.position for tile in game.board if isinstance(tile, target)]
+    if name:
+        ownable_tiles = list(filter(lambda tile: isinstance(tile, tiles.OwnableTile), game.board))
+        return [tile.position for tile in ownable_tiles if tile.property.name == name][0]
+
 class TestMonopolyInitialization(unittest.TestCase):
     def test_game_initialization(self):
         game_instance = monopoly.Monopoly()
@@ -26,35 +43,84 @@ class TestPlayerInitialization(unittest.TestCase):
         self.assertEqual('Bill', game.active_player.name)
         self.assertEqual('Sara', game.active_player.name)
 
-class TestCards(unittest.TestCase):
-    pass
+class TestCardFunctions(unittest.TestCase):
+    """
+    Each card has a unique function associated with it.  In total, between the Chance and Community Chest decks, there
+    are 32 cards.  All Card functions read state, modify state, and return None.  Cards that modify a Player's position
+    need to be able to call game.board[game.active_player.position].perform_auto_actions(game=game), so that appropriate
+    actions are taken in accordance with the rules for the Tile said Player has been moved to.  This defines the
+    signature generically of each card function as:
+        def card_func(Monopoly):
+            return None
+    """
+    game_instance = monopoly.Monopoly()
+    game_instance.add_player('Bill')
+    game_instance.add_player('Sara')
+    game_instance.add_player('Mike')
+    game_instance.generate_in_game_players()
+    game_instance.set_active_player()
+    game_instance.active_player.liquid_holdings = 10000
+
+    def card_finder(self, card_name, deck):
+        return [card for card in deck.cards if card.name.lower() == card_name.lower()][0]
+
+    def test_advance_to_go(self, game=game_instance):
+        """
+        This Card appears in both the Chance and Community Chest decks.
+        :param Monopoly game:
+        :return:
+        """
+        #Move the active player to an arbitrary position on the Board, the Card should move the Active Player back to
+        #position 0.
+        game.active_player.position = 23
+        game.active_player.dealt_card = self.card_finder(card_name='Advance to Go', deck=game.chance_deck)
+        game.active_player.dealt_card.consume_card(game=game)
+        self.assertEqual(10200, game.active_player.liquid_holdings)
+        self.assertEqual(0, game.active_player.position)
+
+    def test_advance_to_illinois_ave(self, game=game_instance):
+        game.active_player.dealt_card = self.card_finder(card_name='Advance to Illinois Ave.', deck=game.chance_deck)
+        game.active_player.dealt_card.consume_card(game=game)
+        #Case 1, advancing to Illinois Avenue if the Tile is not owned
+        self.assertEqual(get_tile_positions(game=game, name='Illinois Avenue'), game.active_player.position)
+        self.assertEqual(10000, game.active_player.liquid_holdings)
+        #Case 2, another player owns the Tile
+        game.active_player.position = 0
+        game.players[1].property_holdings.append(game.board[get_tile_positions(game=game, name='Illinois Avenue')])
+        game.active_player.dealt_card = self.card_finder(card_name='Advance to Illinois Ave.', deck=game.chance_deck)
+        game.active_player.dealt_card.consume_card(game=game)
+        self.assertEqual(9980, game.active_player.liquid_holdings)
+
+    def test_cards_that_move_to_ownable_tiles(self, game=game_instance):
+        card_names = []
 
 
-class TestJailTile(unittest.TestCase):
-    """
-    This will verify the core aspects of the behavior for the JailTile, and the various other game functions which relate to it
-    """
-    pass
+
+
+
+
+
+
+
+
+
+
+
 
 class TestBankruptcyHandling(unittest.TestCase):
     def test_bankruptcy_from_rent_assessed(self):
-        game = monopoly.Monopoly()
-        game.add_player('Bill')
-        game.add_player('Bob')
-        game.add_player('Sam')
-        game.generate_in_game_players()
-        #Give bill BoardWalk and ParkPlace, and build all structures on both
-        game.players[0].property_holdings += [game.board[39], game.board[37]]
-        game.board[39].property.existing_structures = game.board[39].property.possible_structures
-        game.board[37].property.existing_structures = game.board[37].property.possible_structures
-        #Move Bob onto BoardWalk and assess rent on Bob (This will reduce Bob's liquid holdings by 2000, causing game.run_bankruptcy_process() to be triggered)
-        game.active_player = game.players[1]
-        game.players[1].position = 39
-        game.board[39].tile_actions(game=game)
-        self.assertEqual(2, len(game.players))
-        self.assertEqual('Bob', game.active_player.name)
-        self.assertEqual(None, game.active_player)
+        """
+        Player to Player Bankruptcy
 
+        """
+        pass
+
+    def test_bankruptcy_for_fees_assessed(self):
+        """
+        Player to Bank Bankruptcy
+        :return:
+        """
+        pass
 
 class TestColorTile(unittest.TestCase):
 
@@ -162,6 +228,27 @@ class TestColorTile(unittest.TestCase):
         self.assertEqual(len(game_instance.board[31].property.possible_structures) - 1, counter)
         for tile in game_instance.active_player.property_holdings:
             self.assertEqual([], tile.property.existing_structures)
+
+class TestIncomeTaxTile(unittest.TestCase):
+    pass
+
+class TestLuxuryTaxTile(unittest.TestCase):
+    pass
+
+class TestJailTile(unittest.TestCase):
+    """
+    This class will specify the behavior for the JailTile and GoToJailTile
+    """
+    pass
+
+class TestCardTiles(unittest.TestCase):
+    pass
+
+class TestUtilityTiles(unittest.TestCase):
+    pass
+
+class TestGoTile(unittest.TestCase):
+    pass
 
 
 if __name__ == '__main__':

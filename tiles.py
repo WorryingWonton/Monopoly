@@ -180,12 +180,6 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
 
 
 @attr.s
-class UnownableTile(Tile):
-    pass
-
-
-#tile_actions() needs to determine the Tile's state, perform automatic actions on the active_player as a function of that state, and return a list of options the player can choose from
-@attr.s
 class RailRoadTile(OwnableTile):
 
     def list_options(self, game):
@@ -226,114 +220,6 @@ class RailRoadTile(OwnableTile):
     def remove_structure(self, game):
         self.property.existing_structures = []
         game.active_player.liquid_holdings += self.property.possible_structures[0].price
-
-
-@attr.s
-class JailTile(UnownableTile):
-
-    def list_options(self, game):
-        option_list = []
-        if game.active_player.jailed:
-            for card in game.active_player.hand:
-                if card.name == 'Get out of Jail Free':
-                    option_list.append(monopoly.Option(option_name=f'Use {card.name} card from {card.parent_deck}', action=card.action, item_name=card.name))
-            if game.active_player.liquid_holdings >= 50:
-                option_list.append(monopoly.Option(option_name='Pay Jail Fine ($50)', item_name=None, action=self.pay_jail_fine))
-        if game.active_player.position != self.position:
-            option_list += game.board[game.active_player.position].list_options(game=game)
-        return option_list
-
-    def perform_auto_actions(self, game):
-        if game.active_player.jailed:
-            if game.active_player.jailed_turns < 3:
-                if game.check_for_doubles():
-                    game.active_player.jailed_turns = 0
-                    game.active_player.jailed = False
-                    game.active_player.advance_position(amount=sum(game.dice_roll))
-                    game.board[game.active_player.position].perform_auto_actions(game=game)
-                else:
-                    game.active_player.jailed_turns += 1
-            else:
-                self.pay_jail_fine(game=game)
-
-    def pay_jail_fine(self, game):
-        game.active_player.liquid_holdings -= 50
-        if game.active_player.liquid_holdings < 0:
-            self.game.run_bankruptcy_process(debtor=game.active_player, creditor=game.bank)
-        else:
-            game.active_player.jailed_turns = 0
-            game.active_player.jailed = False
-            game.active_player.position = sum(game.roll_dice())
-            game.board[game.active_player.position].perform_auto_actions(game=game)
-
-
-@attr.s
-class CardTile(UnownableTile):
-    def list_options(self, game):
-        if self.position != game.active_player.position:
-            return game.board[game.active_player.position].list_options(game=game)
-        else:
-            return []
-
-
-@attr.s
-class ChanceTile(CardTile):
-
-    def perform_auto_actions(self, game):
-        game.chance_deck.deal_from_deck(game=game)
-        game.active_player.dealt_card.consume_card(game=game)
-
-
-@attr.s
-class CommunityChestTile(CardTile):
-
-    def perform_auto_actions(self, game):
-        game.community_deck.deal_from_deck(game=game)
-        game.active_player.dealt_card.consume_card(game=game)
-
-
-@attr.s
-class GoToJailTile(UnownableTile):
-
-    def perform_auto_actions(self, game):
-        game.active_player.go_directly_to_jail()
-        game.board[game.active_player.position].perform_auto_actions(game=game)
-
-    def list_options(self, game):
-        return game.board[game.active_player.position].list_options(game=game)
-
-
-@attr.s
-class LuxuryTaxTile(UnownableTile):
-
-    def perform_auto_actions(self, game):
-        if game.active_player.liquid_holdings >= 75:
-            game.active_player.liquid_holdings -= 75
-        else:
-            game.run_bankruptcy_process(creditor=game.bank, debtor=game.active_player)
-
-
-@attr.s
-class FreeParking(UnownableTile):
-    pass
-
-
-@attr.s
-class IncomeTaxTile(UnownableTile):
-
-    def perform_auto_actions(self, game):
-        gross_worth = game.active_player.find_gross_worth()
-        if gross_worth <= 2000:
-            game.active_player.liquid_holdings -= floor(.1 * gross_worth)
-        else:
-            game.active_player.liquid_holdings -= 200
-
-
-@attr.s
-class GoTile(UnownableTile):
-
-    def perform_auto_actions(self, game):
-        game.active_player.pass_go()
 
 
 @attr.s
@@ -431,3 +317,118 @@ class ColorTile(OwnableTile):
     def remove_structure(self, game):
         game.active_player.liquid_holdings += self.property.possible_structures[len(self.property.existing_structures) - 1].price / 2
         self.property.existing_structures.remove(self.property.existing_structures[-1])
+
+
+@attr.s
+class UnownableTile(Tile):
+    pass
+
+
+@attr.s
+class JailTile(UnownableTile):
+
+    def list_options(self, game):
+        option_list = []
+        if game.active_player.jailed:
+            for card in game.active_player.hand:
+                if card.name == 'Get out of Jail Free':
+                    option_list.append(monopoly.Option(option_name=f'Use {card.name} card from {card.parent_deck}', action=card.action, item_name=card.name))
+            if game.active_player.liquid_holdings >= 50:
+                option_list.append(monopoly.Option(option_name='Pay Jail Fine ($50)', item_name=None, action=self.pay_jail_fine))
+        if game.active_player.position != self.position:
+            option_list += game.board[game.active_player.position].list_options(game=game)
+        return option_list
+
+    def perform_auto_actions(self, game):
+        if game.active_player.jailed:
+            if game.active_player.jailed_turns < 3:
+                if game.check_for_doubles():
+                    game.active_player.jailed_turns = 0
+                    game.active_player.jailed = False
+                    game.active_player.advance_position(amount=sum(game.dice_roll))
+                    game.board[game.active_player.position].perform_auto_actions(game=game)
+                else:
+                    game.active_player.jailed_turns += 1
+            else:
+                self.pay_jail_fine(game=game)
+
+    def pay_jail_fine(self, game):
+        game.active_player.liquid_holdings -= 50
+        if game.active_player.liquid_holdings < 0:
+            self.game.run_bankruptcy_process(debtor=game.active_player, creditor=game.bank)
+        else:
+            game.active_player.jailed_turns = 0
+            game.active_player.jailed = False
+            game.active_player.position = sum(game.roll_dice())
+            game.board[game.active_player.position].perform_auto_actions(game=game)
+
+
+@attr.s
+class CardTile(UnownableTile):
+    def list_options(self, game):
+        if self.position != game.active_player.position:
+            return game.board[game.active_player.position].list_options(game=game)
+        else:
+            return []
+
+
+@attr.s
+class ChanceTile(CardTile):
+
+    def perform_auto_actions(self, game):
+        game.chance_deck.deal_from_deck(game=game)
+        if game.active_player.dealt_card:
+            game.active_player.dealt_card.consume_card(game=game)
+
+
+@attr.s
+class CommunityChestTile(CardTile):
+
+    def perform_auto_actions(self, game):
+        game.community_deck.deal_from_deck(game=game)
+        if game.active_player.dealt_card:
+            game.active_player.dealt_card.consume_card(game=game)
+
+
+@attr.s
+class GoToJailTile(UnownableTile):
+
+    def perform_auto_actions(self, game):
+        game.active_player.go_directly_to_jail()
+        game.board[game.active_player.position].perform_auto_actions(game=game)
+
+    def list_options(self, game):
+        return game.board[game.active_player.position].list_options(game=game)
+
+
+@attr.s
+class LuxuryTaxTile(UnownableTile):
+
+    def perform_auto_actions(self, game):
+        if game.active_player.liquid_holdings >= 75:
+            game.active_player.liquid_holdings -= 75
+        else:
+            game.run_bankruptcy_process(creditor=game.bank, debtor=game.active_player)
+
+
+@attr.s
+class FreeParking(UnownableTile):
+    pass
+
+
+@attr.s
+class IncomeTaxTile(UnownableTile):
+
+    def perform_auto_actions(self, game):
+        gross_worth = game.active_player.find_gross_worth()
+        if gross_worth <= 2000:
+            game.active_player.liquid_holdings -= floor(.1 * gross_worth)
+        else:
+            game.active_player.liquid_holdings -= 200
+
+
+@attr.s
+class GoTile(UnownableTile):
+
+    def perform_auto_actions(self, game):
+        game.active_player.pass_go()
