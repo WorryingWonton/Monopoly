@@ -363,11 +363,7 @@ class JailTile(UnownableTile):
 
 @attr.s
 class CardTile(UnownableTile):
-    def list_options(self, game):
-        if self.position != game.active_player.position:
-            return game.board[game.active_player.position].list_options(game=game)
-        else:
-            return []
+    pass
 
 
 @attr.s
@@ -394,9 +390,6 @@ class GoToJailTile(UnownableTile):
     def perform_auto_actions(self, game):
         game.active_player.go_directly_to_jail()
         game.board[game.active_player.position].perform_auto_actions(game=game)
-
-    def list_options(self, game):
-        return game.board[game.active_player.position].list_options(game=game)
 
 
 @attr.s
