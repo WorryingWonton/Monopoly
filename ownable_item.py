@@ -18,7 +18,7 @@ class OwnableItem:
     def find_eligible_buyers(self, game, amount):
         return list(filter(lambda player: player.liquid_holdings >= amount and player != game.active_player, game.players))
 
-    def start_auction_process(self, game, seller):
+    def start_auction_process(self, game):
         """This method is called under three conditions:
             1.  The active player calls it directly
             2.  The amount the active player asked to sell an item for was higher than any other player could afford (i.e. find_eligible_players returned an empty list)

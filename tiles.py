@@ -27,14 +27,6 @@ class Structure:
 class Tile:
     position = attr.ib(type=int)
 
-    def tile_actions(self, game):
-        """
-        :param Monopoly game: Reference to the current instance of Monopoly
-        :return list:  Returns a list of options the Active Player can do while on said Tile
-        """
-        self.perform_auto_actions(game=game)
-        return self.list_options(game=game)
-
     def perform_auto_actions(self, game):
         pass
 
@@ -47,9 +39,9 @@ class Tile:
         for n_tuple in property_tuples:
             for tile in n_tuple[0]:
                 if tile.property.mortgaged:
-                    option_list.append(monopoly.Option(option_name=f'''Request to buy {tile.property.name} from {n_tuple[1].name} --- (Property deed price is {tile.property.price}) --- WARNING: Property IS Mortgaged''', action=tile.start_direct_buy_process, item_name=f'{tile.property.name}'))
+                    option_list.append(monopoly.Option(option_name=f'''Request to buy {tile.property.name} from {n_tuple[1].name} --- (Property deed price is {tile.property.price}) --- WARNING: Property IS Mortgaged''', action=tile.start_direct_buy_process, item_name=f'{tile.property.name}', category='buyownedproperty'))
                 else:
-                    option_list.append(monopoly.Option(option_name=f'''Request to buy {tile.property.name} from {n_tuple[1].name} --- (Property deed price is {tile.property.price}) --- Property IS NOT Mortgaged''', action=tile.start_direct_buy_process, item_name=f'{tile.property.name}'))
+                    option_list.append(monopoly.Option(option_name=f'''Request to buy {tile.property.name} from {n_tuple[1].name} --- (Property deed price is {tile.property.price}) --- Property IS NOT Mortgaged''', action=tile.start_direct_buy_process, item_name=f'{tile.property.name}', category='buyownedproperty'))
         return option_list
 
 
@@ -77,9 +69,10 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
     def if_not_owned(self, active_player):
         buy_mortgage_option_list = []
         if self.property.price <= active_player.liquid_holdings:
-            buy_mortgage_option_list.append(monopoly.Option(option_name=f'Buy {self.property.name} at position: {self.position} for {self.property.price}', action=self.buy_property, item_name=self.property.name))
+            buy_mortgage_option_list.append(monopoly.Option(option_name=f'Buy {self.property.name} at position: {self.position} for {self.property.price}', action=self.buy_property, item_name=self.property.name, category='buyunownedproperty'))
         if self.property.mortgage_price <= active_player.liquid_holdings:
-            buy_mortgage_option_list.append(monopoly.Option(option_name=f'Mortgage {self.property.name} at position: {self.position} for {self.property.mortgage_price}', action=self.mortgage_property, item_name=self.property.name))
+            buy_mortgage_option_list.append(monopoly.Option(option_name=f'Mortgage {self.property.name} at position: {self.position} for {self.property.mortgage_price}', action=self.mortgage_property, item_name=self.property.name, category='mortgageunownedproperty'))
+        buy_mortgage_option_list.append(monopoly.Option(option_name=f'Auction {self.property.name} at position: {self.position}', action=self.start_auction_process, item_name=self.property.name, category='auctionproperty'))
         return buy_mortgage_option_list
 
     def buy_property(self, game):
@@ -114,13 +107,13 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
         if self.property.existing_structures:
             return []
         option_list = []
-        option_list.append(monopoly.Option(option_name=f'Sell {self.property.name}', action=self.start_direct_sale_process, item_name=self.property.name))
+        option_list.append(monopoly.Option(option_name=f'Sell {self.property.name}', action=self.start_direct_sale_process, item_name=self.property.name, category='selltoplayer'))
         if self.property.mortgaged:
             if owner.liquid_holdings >= 0.1 * self.property.price + self.property.mortgage_price:
-                option_list.append(monopoly.Option(option_name=f'Lift Mortgage on {self.property.name}', action=self.lift_mortgage, item_name=self.property.name))
+                option_list.append(monopoly.Option(option_name=f'Lift Mortgage on {self.property.name}', action=self.lift_mortgage, item_name=self.property.name, category='liftmortgage'))
         else:
-            option_list.append(monopoly.Option(option_name=f'Mortgage {self.property.name} (Note: This will not permit you to develop {self.property.name} or enable you to charge rent on it)', action=self.mortgage_owned_property, item_name=self.property.name))
-            option_list.append(monopoly.Option(option_name=f'Sell {self.property.name} to the bank for {self.property.price / 2}', action=self.sell_to_bank, item_name=self.property.name))
+            option_list.append(monopoly.Option(option_name=f'Mortgage {self.property.name} (Note: This will not permit you to develop {self.property.name} or enable you to charge rent on it)', action=self.mortgage_owned_property, item_name=self.property.name, category='mortgageownedproperty'))
+            option_list.append(monopoly.Option(option_name=f'Sell {self.property.name} to the bank for {self.property.price / 2}', action=self.sell_to_bank, item_name=self.property.name, category='selltobank'))
         return option_list
 
     def sell_to_bank(self, game):
@@ -136,9 +129,9 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
             if buyer_decision:
                 self.complete_transaction(buyer=buyer, seller=game.active_player, amount=amount, game=game)
             else:
-                self.start_auction_process(game=game, seller=game.active_player)
+                self.start_auction_process(game=game)
         else:
-            self.start_auction_process(game=game, seller=game.active_player)
+            self.start_auction_process(game=game)
 
     def start_direct_buy_process(self, game):
         owner = self.find_owner(game.players)
@@ -147,12 +140,14 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
         if seller_decision:
             self.complete_transaction(buyer=game.active_player, seller=owner, amount=amount, game=game)
 
-    def start_auction_process(self, game, seller):
+    def start_auction_process(self, game):
+        seller = self.find_owner(players=game.players)
+        if not seller:
+            seller = game.bank
+            seller.property_holdings.append(self)
         winning_bid = game.interface.run_auction(item=self.property, seller=seller)
         if winning_bid:
-            if winning_bid[0].liquid_holdings < winning_bid[1]:
-                game.run_bankruptcy_process(debtor=winning_bid[0], creditor=game.active_player)
-            self.complete_transaction(buyer=winning_bid[0], seller=game.active_player, amount=winning_bid[1], game=game)
+            self.complete_transaction(buyer=winning_bid[0], seller=seller, amount=winning_bid[1], game=game)
 
     def complete_transaction(self, buyer, seller, amount, game):
         if self.property.mortgaged:
@@ -168,10 +163,10 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
                 amount = amount + 0.1*self.property.mortgage_price
         if buyer.liquid_holdings < amount:
             return game.run_bankruptcy_process(debtor=buyer, creditor=seller)
-        buyer.liquid_holdings -= amount
+        seller.liquid_holdings += amount
         seller.property_holdings.remove(self)
         buyer.property_holdings.append(self)
-        seller.liquid_holdings += amount
+        buyer.liquid_holdings -= amount
 
     def remove_structure(self, game):
         pass
@@ -191,9 +186,9 @@ class RailRoadTile(OwnableTile):
                 sell_options = self.list_sell_options(owner=owner)
                 option_list += sell_options
                 if sell_options and not self.property.mortgaged and owner.liquid_holdings >= self.property.possible_structures[0].price:
-                    option_list.append(monopoly.Option(option_name=f'Build Transtation at {self.property.name}', action=self.build_train_station, item_name=self.property.name))
+                    option_list.append(monopoly.Option(option_name=f'Build Transtation at {self.property.name}', action=self.build_train_station, item_name=self.property.name, category='buildstructure'))
                 if self.property.existing_structures:
-                    option_list.append(monopoly.Option(option_name=f'Sell Trainstation at {self.property.name} to the Bank for {0.5*self.property.existing_structures[0].price}', action=self.remove_structure, item_name=self.property.existing_structures[0].type))
+                    option_list.append(monopoly.Option(option_name=f'Sell Trainstation at {self.property.name} to the Bank for {0.5*self.property.existing_structures[0].price}', action=self.remove_structure, item_name=self.property.existing_structures[0].type, category='removestructure'))
         else:
             option_list += self.if_not_owned(active_player=game.active_player)
         return option_list
@@ -285,7 +280,7 @@ class ColorTile(OwnableTile):
                 option_list = []
                 for struct_tuple in struct_tuples:
                     if struct_tuple[1] == min(struct_counts) and struct_tuple[0].property.possible_structures[struct_tuple[1]].price <= game.active_player.liquid_holdings and struct_tuple[0] == self:
-                        option_list.append(monopoly.Option(option_name=f'Build {struct_tuple[0].property.possible_structures[struct_tuple[1]].type} on {struct_tuple[0].property.name}', action=self.build_structure, item_name=struct_tuple[0].property.possible_structures[struct_tuple[1]]))
+                        option_list.append(monopoly.Option(option_name=f'Build {struct_tuple[0].property.possible_structures[struct_tuple[1]].type} on {struct_tuple[0].property.name}', action=self.build_structure, item_name=struct_tuple[0].property.possible_structures[struct_tuple[1]], category='buildstructure'))
                 return option_list
         else:
             return []
@@ -308,7 +303,7 @@ class ColorTile(OwnableTile):
             option_list = []
             for struct_tuple in struct_tuples:
                 if struct_tuple[1] == max(struct_counts) and struct_tuple[0] == self:
-                    option_list.append(monopoly.Option(option_name=f'Remove {struct_tuple[0].property.possible_structures[len(struct_tuple[0].property.existing_structures) - 1].type} on {struct_tuple[0].property.name}', action=self.remove_structure, item_name=struct_tuple[0].property.possible_structures[len(struct_tuple[0].property.existing_structures) - 1]))
+                    option_list.append(monopoly.Option(option_name=f'Remove {struct_tuple[0].property.possible_structures[len(struct_tuple[0].property.existing_structures) - 1].type} on {struct_tuple[0].property.name}', action=self.remove_structure, item_name=struct_tuple[0].property.possible_structures[len(struct_tuple[0].property.existing_structures) - 1], category='removestructure'))
             return option_list
 
     def build_structure(self, game):
@@ -333,9 +328,9 @@ class JailTile(UnownableTile):
         if game.active_player.jailed:
             for card in game.active_player.hand:
                 if card.name == 'Get out of Jail Free':
-                    option_list.append(monopoly.Option(option_name=f'Use {card.name} card from {card.parent_deck}', action=card.action, item_name=card.name))
+                    option_list.append(monopoly.Option(option_name=f'Use {card.name} card from {card.parent_deck}', action=card.action, item_name=card.name, category='useheldcard'))
             if game.active_player.liquid_holdings >= 50:
-                option_list.append(monopoly.Option(option_name='Pay Jail Fine ($50)', item_name=None, action=self.pay_jail_fine))
+                option_list.append(monopoly.Option(option_name='Pay Jail Fine ($50)', item_name=None, action=self.pay_jail_fine, category='payjailfine', ends_turn=True))
         if game.active_player.position != self.position:
             option_list += game.board[game.active_player.position].list_options(game=game)
         return option_list
@@ -348,6 +343,7 @@ class JailTile(UnownableTile):
                     game.active_player.jailed = False
                     game.active_player.advance_position(amount=sum(game.dice_roll))
                     game.board[game.active_player.position].perform_auto_actions(game=game)
+                    game.end_current_turn()
                 else:
                     game.active_player.jailed_turns += 1
             else:
@@ -362,6 +358,7 @@ class JailTile(UnownableTile):
             game.active_player.jailed = False
             game.active_player.position = sum(game.roll_dice())
             game.board[game.active_player.position].perform_auto_actions(game=game)
+            game.end_current_turn()
 
 
 @attr.s

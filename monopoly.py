@@ -35,6 +35,7 @@ class Monopoly:
         self.turns = 0
         self.bank = Bank(game=self)
         self.dice_roll = None
+        self.continue_current_turn = True
         if not interface:
             self.interface = monopoly_cl_interface.CLInterface(game=self)
         else:
@@ -68,10 +69,13 @@ class Monopoly:
         self.dice_roll = self.roll_dice()
         if not self.active_player.jailed:
             self.active_player.advance_position(amount=sum(self.dice_roll))
-        print(f'\n---Pre Automatic Actions---{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name} --- Pos: {self.active_player.position} ({self.board[self.active_player.position]}) --- {self.dice_roll} ---{[x.property.name for x in self.active_player.property_holdings]}')
         self.board[self.active_player.position].perform_auto_actions(game=self)
-        print(f'\n---Post Automatic Actions---{self.active_player.liquid_holdings}: --- {self.turns} --- {self.active_player.name} --- Pos: {self.active_player.position} ({self.board[self.active_player.position]}) --- {self.dice_roll} ---{[x.property.name for x in self.active_player.property_holdings]}')
+        if not self.continue_current_turn:
+            self.continue_current_turn = True
+            return self.check_for_doubles()
         while True:
+            if not self.active_player.in_game:
+                break
             option_list = []
             option_list += self.board[self.active_player.position].list_options(game=self)
             option_list += self.board[self.active_player.position].find_properties_of_other_players(game=self)
@@ -81,8 +85,14 @@ class Monopoly:
             if option_list:
                 active_player_decision = self.interface.get_decision(option_list)
                 if not active_player_decision:
+                    auction_options = [option for option in option_list if option.category == 'auctionproperty']
+                    if auction_options:
+                        self.execute_player_decision(active_player_decision=auction_options[0])
                     break
                 self.execute_player_decision(active_player_decision)
+                if not self.continue_current_turn:
+                    self.continue_current_turn = True
+                    return self.check_for_doubles()
             else:
                 break
         return self.check_for_doubles()
@@ -96,7 +106,7 @@ class Monopoly:
         self.chance_deck.shuffle_deck()
         self.community_deck.shuffle_deck()
         while len(self.players) > 1:
-            if self.turns % 10 == 0:
+            if self.turns % len(self.chance_deck.cards) == 0:
                 self.chance_deck.shuffle_deck()
                 self.community_deck.shuffle_deck()
             if doubles:
@@ -129,6 +139,8 @@ class Monopoly:
             creditor.property_holdings.append(tile)
         self.remove_player(debtor)
         self.generate_in_game_players()
+        if len(self.players) == 1:
+            return
         if creditor == self.bank:
             self.run_bank_auction()
 
@@ -147,12 +159,35 @@ class Monopoly:
     def check_for_doubles(self):
         return self.dice_roll[0] == self.dice_roll[1]
 
+    def end_current_turn(self):
+        self.continue_current_turn = False
+
+
 class Option:
-    def __init__(self, option_name, item_name, action):
+    def __init__(self, option_name, item_name, action, category, ends_turn=False):
         self.option_name = option_name
         self.item_name = item_name
         self.action = action
-        self.item = None
+        """
+        Categories are:
+            'payjailfine'
+            'mortgageunownedproperty'
+            'mortgageownedproperty'
+            'buyownedproperty'
+            'buyunownedproperty'
+            'auctionproperty'
+            'selltobank'
+            'selltoplayer'
+            'buycardfromplayer'
+            'buildstructure'
+            'removestructure'
+			'liftmortgage'
+			'buyandliftmortgage'
+			'useheldcard'
+        """
+        self.category = category
+        self.ends_turn = ends_turn
+
 
 class Bank:
     def __init__(self, game):
@@ -202,6 +237,7 @@ class Player:
     def advance_position(self, amount):
         if self.position + amount < 0:
             self.position += 40
+            return
         if self.position + amount > 40 and not self.jailed:
             self.pass_go()
         self.position = (self.position + amount) % 40
@@ -213,11 +249,11 @@ class Player:
     def generate_card_options(self):
         card_options = []
         for card in self.hand:
-            card_options.append(Option(item_name=card.name, action=card.start_direct_sale_process, option_name=f'Sell {card.name}'))
+            card_options.append(Option(item_name=card.name, action=card.start_direct_sale_process, option_name=f'Sell {card.name}', category='selltoplayer'))
         return card_options + self.list_cards_of_other_players()
 
     def list_cards_of_other_players(self):
-        return [Option(option_name=f'Buy {card.name} from {card.find_owner(game=self.game).name}', item_name=card.name, action=card.start_direct_buy_process) for card in reduce(lambda card, next_card: card + next_card, [player.hand for player in list(filter(lambda player: player != self.game.active_player and len(player.hand) > 0, self.game.players))], [])]
+        return [Option(option_name=f'Buy {card.name} from {card.find_owner(game=self.game).name}', item_name=card.name, action=card.start_direct_buy_process, category='buycardfromplayer') for card in reduce(lambda card, next_card: card + next_card, [player.hand for player in list(filter(lambda player: player != self.game.active_player and len(player.hand) > 0, self.game.players))], [])]
 
     def pass_go(self):
         self.liquid_holdings += 200

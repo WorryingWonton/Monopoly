@@ -5,6 +5,7 @@ from chance_deck_functions import *
 from community_chest_functions import *
 
 class Card(ownable_item.OwnableItem):
+
     def __init__(self, name, action, holdable, parent_deck):
         self.name = name
         self.action = action
@@ -26,9 +27,9 @@ class Card(ownable_item.OwnableItem):
             if buyer_decision:
                 self.complete_transaction(seller=game.active_player, amount=amount, buyer=buyer, game=game)
             else:
-                self.start_auction_process(game=game, seller=game.active_player)
+                self.start_auction_process(game=game)
         else:
-            self.start_auction_process(game=game, seller=game.active_player)
+            self.start_auction_process(game=game)
 
     def start_direct_buy_process(self, game):
         owner = self.find_owner(game=game)
@@ -47,7 +48,8 @@ class Card(ownable_item.OwnableItem):
         seller.liquid_holdings += amount
         buyer.hand.append(self)
 
-    def start_auction_process(self, game, seller):
+    def start_auction_process(self, game):
+        seller = self.find_owner(game=game)
         winning_bid = game.interface.run_auction(item=self, seller=seller)
         if winning_bid:
             if winning_bid[0].liquid_holdings < winning_bid[1]:
