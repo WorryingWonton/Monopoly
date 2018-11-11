@@ -39,7 +39,7 @@ class Tile:
         for n_tuple in property_tuples:
             for tile in n_tuple[0]:
                 if tile.property.mortgaged:
-                    option_list.append(monopoly.Option(option_name=f'''Request to buy {tile.property.name} from {n_tuple[1].name} --- (Property deed price is {tile.property.price}) --- WARNING: Property IS Mortgaged''', action=tile.start_direct_buy_process, item_name=f'{tile.property.name}', category='buyownedproperty'))
+                    option_list.append(monopoly.Option(option_name=f'''Request to buy {tile.property.name} from {n_tuple[1].name} --- (Property deed price is {tile.property.price}) --- WARNING: Property IS Mortgaged''', action=tile.start_direct_buy_process, item_name=f'{tile.property.name}', category='buymortgagedproperty'))
                 else:
                     option_list.append(monopoly.Option(option_name=f'''Request to buy {tile.property.name} from {n_tuple[1].name} --- (Property deed price is {tile.property.price}) --- Property IS NOT Mortgaged''', action=tile.start_direct_buy_process, item_name=f'{tile.property.name}', category='buyownedproperty'))
         return option_list

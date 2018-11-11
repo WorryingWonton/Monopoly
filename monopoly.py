@@ -75,7 +75,7 @@ class Monopoly:
                 self.execute_player_decision(active_player_decision)
                 if not self.continue_current_turn:
                     self.continue_current_turn = True
-                    return self.check_for_doubles()
+                    break
             else:
                 break
         return self.check_for_doubles()
@@ -120,6 +120,7 @@ class Monopoly:
                 #Remove all structures after sale to bank
             tile.property.existing_structures = []
             creditor.property_holdings.append(tile)
+        creditor.hand = debtor.hand
         self.remove_player(debtor)
         self.generate_in_game_players()
         if len(self.players) == 1:
@@ -157,6 +158,7 @@ class Option:
             'mortgageunownedproperty'
             'mortgageownedproperty'
             'buyownedproperty'
+            'buymortgagedproperty'
             'buyunownedproperty'
             'auctionproperty'
             'selltobank'
