@@ -4,7 +4,20 @@ from functools import reduce
 import cards
 import board
 from itertools import cycle
-
+"""
+TODO
+    -Reimplement the interface to support Option categories
+        -After completing this, remove the option_name attribute from all Option objects
+    -Break Card class into two subclasses, HoldableCard and NonHoldableCard
+        -HoldableCard will inherit from OwnableItem, NonHoldableCard will not.
+    -Modify the HelperFunctions module to include a function to help filter Options by category
+    -Modify auction handling in the interface to:
+        -Present players with the ability to sell sellable properties to the bank, or mortgage sellable properties
+        -Compute the current bidder's gross worth, and display their maximum theoretical bid as a function of said value
+            -I will not stop them from bidding beyond this.
+            -If the bidder's bid is an excess of the liquid holdings, but less than their gross worth AND the auction ends (len bidders == 1)
+                -Provide them a dialogue to mortgage or sell their properties.
+"""
 
 class Monopoly:
 
@@ -59,11 +72,11 @@ class Monopoly:
         while True:
             if not self.active_player.in_game:
                 break
-            option_list = []
-            option_list += self.board[self.active_player.position].list_options(game=self)
-            option_list += self.board[self.active_player.position].find_properties_of_other_players(game=self)
-            for tile in [tile for tile in self.active_player.property_holdings if tile.position != self.active_player.position]:
-                option_list += tile.list_options(game=self)
+            option_list = self.active_player.list_options_in_categories()
+            # option_list += self.board[self.active_player.position].list_options(game=self)
+            # option_list += self.board[self.active_player.position].find_properties_of_other_players(game=self)
+            # for tile in [tile for tile in self.active_player.property_holdings if tile.position != self.active_player.position]:
+            #     option_list += tile.list_options(game=self)
             option_list += self.active_player.player_actions()
             if option_list:
                 active_player_decision = self.interface.get_decision(option_list)
@@ -155,6 +168,9 @@ class Option:
         """
         Categories are:
             'payjailfine'
+                -Needs to know amount is $50
+                -i18n.en_US.pay_jail_fine = "pay DOLLAR to get out of jail"
+                -Message = i18n[language][category].replace("DOLLAR", amount)
             'mortgageunownedproperty'
             'mortgageownedproperty'
             'buyownedproperty'
@@ -242,6 +258,18 @@ class Player:
 
     def pass_go(self):
         self.liquid_holdings += 200
+
+    def list_options_in_categories(self, categories=None):
+        option_list = []
+        if categories:
+            option_list += [option for option in self.game.board[self.position].list_options(game=self.game) if option.category in categories]
+            for tile in [tile for tile in self.property_holdings if tile.position != self.position]:
+                option_list += [option for option in tile.list_options(game=self.game) if option.category in categories]
+        else:
+            option_list += self.game.board[self.position].list_options(game=self.game)
+            for tile in [tile for tile in self.property_holdings if tile.position != self.position]:
+                option_list += tile.list_options(game=self.game)
+        return option_list
 
 if __name__ == '__main__':
     game_instance = Monopoly()

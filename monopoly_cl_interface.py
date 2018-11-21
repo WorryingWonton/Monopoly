@@ -179,3 +179,12 @@ in which players are added to it.
                     break
             else:
                 self.game.add_player(name=player_name)
+
+
+
+"""
+Option objects can contain 14 different categories in Monopoly.
+The interface should entirely determine how an Option is displayed.
+
+
+"""
