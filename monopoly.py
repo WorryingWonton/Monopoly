@@ -3,7 +3,7 @@ import random
 from functools import reduce
 import cards
 import board
-from itertools import cycle
+from itertools import cycle, islice, dropwhile
 """
 TODO
     -Reimplement the interface to support Option categories
@@ -42,8 +42,6 @@ class Monopoly:
 
     def remove_player(self, player):
         player.in_game = False
-        if player != self.active_player:
-            self.generate_in_game_players()
 
     def generate_in_game_players(self):
         self.players = [player for player in self.all_players if player.in_game]
@@ -52,10 +50,7 @@ class Monopoly:
         if not self.active_player:
             self.active_player = self.all_players[0]
         else:
-            player_iterator = cycle(self.players)
-            while next(player_iterator) != self.active_player:
-                pass
-            self.active_player = next(player_iterator)
+            self.active_player = next(dropwhile(lambda p: not p.in_game, islice(dropwhile(lambda p: p != self.active_player, cycle(self.players)), 1, None)))
         self.generate_in_game_players()
 
     def roll_dice(self):
@@ -73,10 +68,7 @@ class Monopoly:
             if not self.active_player.in_game:
                 break
             option_list = self.active_player.list_options_in_categories()
-            # option_list += self.board[self.active_player.position].list_options(game=self)
-            # option_list += self.board[self.active_player.position].find_properties_of_other_players(game=self)
-            # for tile in [tile for tile in self.active_player.property_holdings if tile.position != self.active_player.position]:
-            #     option_list += tile.list_options(game=self)
+            option_list += self.board[self.active_player.position].find_properties_of_other_players(game=self)
             option_list += self.active_player.player_actions()
             if option_list:
                 active_player_decision = self.interface.get_decision(option_list)
