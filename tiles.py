@@ -411,7 +411,7 @@ class FreeParking(UnownableTile):
 class IncomeTaxTile(UnownableTile):
 
     def perform_auto_actions(self, game):
-        gross_worth = game.active_player.find_gross_worth()
+        gross_worth = game.active_player.calculate_taxable_assets()
         if gross_worth <= 2000:
             game.active_player.liquid_holdings -= floor(.1 * gross_worth)
         else:

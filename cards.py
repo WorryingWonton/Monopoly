@@ -1,8 +1,8 @@
-import attr
 import random
-import ownable_item
 from chance_deck_functions import *
 from community_chest_functions import *
+import attr
+import ownable_item
 
 class Card(ownable_item.OwnableItem):
 

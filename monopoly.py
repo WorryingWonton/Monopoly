@@ -4,20 +4,40 @@ from functools import reduce
 import cards
 import board
 from itertools import cycle, islice, dropwhile
+
 """
-TODO
-    -Reimplement the interface to support Option categories
+TODO (To bring Monopoly fully inline with the rules as defined by https://www.hasbro.com/common/instruct/monins.pdf)
+    -Reimplement the interface to support Option categories [On hold, but mostly complete]
         -After completing this, remove the option_name attribute from all Option objects
-    -Break Card class into two subclasses, HoldableCard and NonHoldableCard
+    -Break Card class into two subclasses, HoldableCard and NonHoldableCard [On hold]
         -HoldableCard will inherit from OwnableItem, NonHoldableCard will not.
-    -Modify the HelperFunctions module to include a function to help filter Options by category
-    -Modify auction handling in the interface to:
-        -Present players with the ability to sell sellable properties to the bank, or mortgage sellable properties
-        -Compute the current bidder's gross worth, and display their maximum theoretical bid as a function of said value
-            -I will not stop them from bidding beyond this.
-            -If the bidder's bid is an excess of the liquid holdings, but less than their gross worth AND the auction ends (len bidders == 1)
-                -Provide them a dialogue to mortgage or sell their properties.
+    -Remove Property class: [On hold, this will be done concurrently with splitting the Card class]
+        -Move functionality to OwnableTile
+        -This should allow me to fully merge the OwnableItem behavior implemented in both OwnableTile and OwnableCard 
+    -Add a method to Player which will list the Options available to them [Done]
+        -This method will optionally take a list of categories, which it will then filter the options it returns by.
+    -Create dedicated auction module, and an Auction class within that module: [Done]
+        -The Auction class will take an item to be sold, and a reference to the game. 
+        -The Auction class will contain a method called auction_item(), which will handle running the auction.
+    -Modify the interface to support the above new approach to auctions[:
+        -Add a method to the CLInterface class called get_bid(bidder, options), which returns an int representing the bid
+            -get_bid() will:
+                -Present the maximum possible bid a Player can make, given their present gross worth
+                    -Gross worth will be determined as the sum of their liquid holdings, and the sum of the immediate sell value of their sellable properties and structures.
+                -If a Player bids below their liquid holdings:
+                    -Return their bid
+                -If a Player bids above their liquid holdings, but below their gross worth:
+                    -Present them with the option list, require that they sell assets until their liquid_holdings equals or exceeds their bid
+                    -The Player's bid isn't finalized until get_bid() returns something, present the Player with two additional Options:
+                        -Quit the auction
+                        -Submit a different bid
+                    -Present a final Option to Go Bankrupt.
+                        -If chosen, return the Player's bid.
+                -If a Player bids above their gross worth:
+                    -Present the Player with the Option to retype their bid, or quit the auction.
+                        -If the Player declines either Option, return their bid.
 """
+
 
 class Monopoly:
 
@@ -208,16 +228,26 @@ class Player:
     def player_actions(self):
         return self.generate_card_options()
 
+    def calculate_taxable_assets(self):
+        assets = self.liquid_holdings
+        for tile in self.property_holdings:
+            if tile.property.mortgaged:
+                assets += tile.property.mortgage_price
+            else:
+                assets += tile.property.price
+            if len(tile.property.existing_structures) > 0:
+                for structure in tile.property.existing_structures:
+                  assets += structure.price/2
+        return assets
+
     def find_gross_worth(self):
         gross_worth = self.liquid_holdings
         for tile in self.property_holdings:
-            if tile.property.mortgaged:
-                gross_worth += tile.property.mortgage_price
-            else:
-                gross_worth += tile.property.price
-            if len(tile.property.existing_structures) > 0:
-                for structure in tile.property.existing_structures:
-                  gross_worth += structure.price/2
+            options = tile.list_options(game=self.game)
+            for option in options:
+                if option.category in ['selltobank', 'mortgageownedproperty', 'removestructure']:
+                    gross_worth += tile.property.price/2
+                    break
         return gross_worth
 
     def compute_advancement_amount(self, target_position):

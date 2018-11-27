@@ -123,9 +123,9 @@ Enter an amount larger than {highest_bid}, enter an equal or smaller amount to q
                     winning_bid = (player, highest_bid)
         return winning_bid
 
-    def ml_printer(self, option_list):
+    def ml_printer(self, option_list, start=1):
         option_string = ''
-        for n, option in enumerate(option_list, start=1):
+        for n, option in enumerate(option_list, start=start):
             option_string += f'''
         {n}: {option.option_name}'''
         return option_string
@@ -138,6 +138,50 @@ Enter an amount larger than {highest_bid}, enter an equal or smaller amount to q
         {n}: {player.name}'''
         return option_string
 
+    def get_bid(self, bidder, item, highest_bid):
+        bid = self.get_number(input_message=f"""{bidder.name}, your current liquid holdings are ${bidder.liquid_holdings}, and you have a gross worth of ${bidder.find_gross_worth()}
+            The current highest bid for {item.name} is ${highest_bid}
+            To exit the auction, enter a value less than ${highest_bid}
+            How much would you like to bid?  $
+            """)
+        if bid < bidder.liquid_holdings:
+            return bid
+        elif bid > bidder.liquid_holdings and bid < bidder.find_gross_worth():
+            while bidder.liquid_holdings < bid:
+                options = bidder.list_options_in_categories(categories=['selltobank', 'mortgageownedproperty', 'removestructure'])
+                selection = self.get_number(input_message=f"""Overbid Warning!
+                    {bidder.name}, your bid exceeds your liquid holdings by ${bid - bidder.liquid_holdings}
+                    Your options are:
+                        1. Enter a different bid
+                        2. Quit the auction (your bid will not be counted)
+                        3. Submit bid anyways (This will cause you to go bankrupt)
+                        {self.ml_printer(option_list=options, start=4)}""")
+                if selection == 1:
+                    new_bid = self.get_number(input_message=f'Enter a new bid, {bidder.name}: ')
+                    if new_bid <= bidder.liquid_holdings:
+                        return new_bid
+                    else:
+                        continue
+                elif selection == 2:
+                    return 0
+                elif selection == 3:
+                    return bid
+                else:
+                    if selection in range(3, len(options) + 3):
+                        self.game.execute_player_decision(active_player_decision=options[selection - 3])
+                    else:
+                        continue
+        else:
+            return bid
+
+    def get_number(self, input_message):
+        while True:
+            number = input(input_message)
+            try:
+                int(number)
+                return int(number)
+            except:
+                print('Please enter a number: ')
 
     def display_current_game_state(self):
         """This method runs at the beginning of each turn, and shows the complete state of the game:
@@ -188,3 +232,4 @@ The interface should entirely determine how an Option is displayed.
 
 
 """
+
