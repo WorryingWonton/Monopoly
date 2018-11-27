@@ -2,9 +2,8 @@ from itertools import islice, dropwhile, cycle
 
 class Auction:
 
-    def __init__(self, game, item):
+    def __init__(self, game):
         self.game = game
-        self.item = item
         self.current_bidder = None
         self.highest_bid = 0
         self.bidders = []
@@ -14,16 +13,22 @@ class Auction:
         if not self.current_bidder:
             self.current_bidder = self.game.players[0]
         else:
-            self.current_bidder = next(dropwhile(lambda bidder: bidder.find_gross_worth() >= self.highest_bid, islice(dropwhile(lambda bidder: not self.current_bidder, cycle(self.bidders)), 1, None)))
-        self.bidders = [player for player in self.game.players if player.find_gross_worth() >= self.highest_bid]
+            self.current_bidder = self.bidders[(self.bidders.index(self.current_bidder) + 1) % len(self.bidders)]
+        self.bidders = [bidder for bidder in self.bidders if bidder.in_auction]
 
-    def auction_item(self):
+    def remove_bidder(self, bidder):
+        bidder.in_auction = False
+
+    def auction_item(self, item, seller):
+        self.bidders = self.game.players
         while len(self.bidders) > 1:
             self.set_current_bidder()
-            bid = self.game.interface.get_bid(bidder=self.current_bidder, item=self.item, highest_bid=self.highest_bid)
+            bid = self.game.interface.get_bid(bidder=self.current_bidder, item=item, highest_bid=self.highest_bid, seller=seller)
             if bid and bid > self.highest_bid:
                 self.highest_bid = bid
                 self.highest_bidder = self.current_bidder
             else:
-                self.bidders.remove(self.current_bidder)
-        return (self.highest_bid, self.highest_bidder)
+                self.remove_bidder(bidder=self.current_bidder)
+        for player in self.game.players:
+            player.in_auction = True
+        return (self.highest_bidder, self.highest_bid)

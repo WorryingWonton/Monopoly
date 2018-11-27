@@ -138,24 +138,27 @@ Enter an amount larger than {highest_bid}, enter an equal or smaller amount to q
         {n}: {player.name}'''
         return option_string
 
-    def get_bid(self, bidder, item, highest_bid):
-        bid = self.get_number(input_message=f"""{bidder.name}, your current liquid holdings are ${bidder.liquid_holdings}, and you have a gross worth of ${bidder.find_gross_worth()}
+    def get_bid(self, bidder, item, highest_bid, seller):
+        print(f'Auction for {item.name} sold by {seller.name}!')
+        bid = self.get_number(input_message=f"""
+            {bidder.name}, your current liquid holdings are ${bidder.liquid_holdings}, and you have a gross worth of ${bidder.find_gross_worth()}
             The current highest bid for {item.name} is ${highest_bid}
             To exit the auction, enter a value less than ${highest_bid}
-            How much would you like to bid?  $
-            """)
+            How much would you like to bid?  $""")
         if bid < bidder.liquid_holdings:
             return bid
         elif bid > bidder.liquid_holdings and bid < bidder.find_gross_worth():
             while bidder.liquid_holdings < bid:
                 options = bidder.list_options_in_categories(categories=['selltobank', 'mortgageownedproperty', 'removestructure'])
-                selection = self.get_number(input_message=f"""Overbid Warning!
-                    {bidder.name}, your bid exceeds your liquid holdings by ${bid - bidder.liquid_holdings}
-                    Your options are:
-                        1. Enter a different bid
-                        2. Quit the auction (your bid will not be counted)
-                        3. Submit bid anyways (This will cause you to go bankrupt)
-                        {self.ml_printer(option_list=options, start=4)}""")
+                selection = self.get_number(input_message=f"""
+        Overbid Warning!
+        {bidder.name}, your bid exceeds your liquid holdings (${bidder.liquid_holdings}) by ${bid - bidder.liquid_holdings}
+        Your options are:
+            1. Enter a different bid
+            2. Quit the auction (your bid will not be counted)
+            3. Submit bid anyways (This will cause you to go bankrupt)
+                {self.ml_printer(option_list=options, start=4)}
+            Pick a number from the list and press Enter: """)
                 if selection == 1:
                     new_bid = self.get_number(input_message=f'Enter a new bid, {bidder.name}: ')
                     if new_bid <= bidder.liquid_holdings:
@@ -167,8 +170,8 @@ Enter an amount larger than {highest_bid}, enter an equal or smaller amount to q
                 elif selection == 3:
                     return bid
                 else:
-                    if selection in range(3, len(options) + 3):
-                        self.game.execute_player_decision(active_player_decision=options[selection - 3])
+                    if selection in range(3, len(options) + 4):
+                        self.game.execute_player_decision(active_player_decision=options[selection - 4])
                     else:
                         continue
         else:

@@ -1,4 +1,5 @@
 import monopoly_cl_interface
+import auction
 import random
 from functools import reduce
 import cards
@@ -52,10 +53,12 @@ class Monopoly:
         self.bank = Bank(game=self)
         self.dice_roll = None
         self.continue_current_turn = True
+        self.auction_engine = auction.Auction(game=self)
         if not interface:
             self.interface = monopoly_cl_interface.CLInterface(game=self)
         else:
             self.interface = interface
+
 
     def add_player(self, name):
         self.all_players.append(Player(name, game=self))
@@ -155,11 +158,11 @@ class Monopoly:
 
     def run_bank_auction(self):
         for tile in self.bank.property_holdings:
-            winning_bid = self.interface.run_auction(item=tile.property, seller=self.bank)
+            winning_bid = self.auction_engine.auction_item(item=tile.property, seller=self.bank)
             if winning_bid:
                 tile.complete_transaction(buyer=winning_bid[0], seller=self.bank, amount=winning_bid[1], game=self)
         for card in self.bank.hand:
-            winning_bid = self.interface.run_auction(item=card, seller=self.bank)
+            winning_bid = self.auction_engine.auction_item(item=card, seller=self.bank)
             if winning_bid:
                 card.complete_transaction(buyer=winning_bid[0], seller=self.bank, amount=winning_bid[1], game=self)
         self.bank.property_holdings = []
@@ -224,6 +227,7 @@ class Player:
         self.game = game
         self.dealt_card = None
         self.in_game = True
+        self.in_auction = True
 
     def player_actions(self):
         return self.generate_card_options()
@@ -245,9 +249,11 @@ class Player:
         for tile in self.property_holdings:
             options = tile.list_options(game=self.game)
             for option in options:
-                if option.category in ['selltobank', 'mortgageownedproperty', 'removestructure']:
+                if option.category in ['selltobank', 'mortgageownedproperty']:
                     gross_worth += tile.property.price/2
                     break
+                elif option.category == 'removestructure':
+                    gross_worth += tile.property.existing_structures[-1].price
         return gross_worth
 
     def compute_advancement_amount(self, target_position):

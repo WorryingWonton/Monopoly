@@ -145,7 +145,7 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
         if not seller:
             seller = game.bank
             seller.property_holdings.append(self)
-        winning_bid = game.interface.run_auction(item=self.property, seller=seller)
+        winning_bid = game.auction_engine.auction_item(item=self.property, seller=seller)
         if winning_bid:
             self.complete_transaction(buyer=winning_bid[0], seller=seller, amount=winning_bid[1], game=game)
 
