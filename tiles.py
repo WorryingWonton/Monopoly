@@ -47,19 +47,11 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
     def perform_auto_actions(self, game):
         if self.mortgaged:
             return
-        owner = self.find_owner(players=game.players)
-        if owner:
-            if owner == game.active_player:
-                return
-            else:
-                self.assess_rent(owner=owner, game=game)
-
-    def find_owner(self, players):
-        for player in players:
-            for tile in player.property_holdings:
-                if tile == self:
-                    return player
-        return None
+        owner = self.find_owner(game=game)
+        if owner == game.active_player or owner == game.bank:
+            return
+        else:
+            self.assess_rent(owner=owner, game=game)
 
     def if_not_owned(self, active_player):
         buy_mortgage_option_list = []
@@ -115,36 +107,6 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
         game.active_player.liquid_holdings += self.price * 0.5
         game.active_player.property_holdings.remove(self)
 
-    def start_direct_sale_process(self, game):
-        amount = game.interface.get_amount_to_sell(item=self)
-        eligible_buyers = self.find_eligible_buyers(game=game, amount=amount)
-        if eligible_buyers:
-            buyer = game.interface.pick_eligible_buyer(eligible_buyers)
-            if buyer:
-                buyer_decision = game.interface.get_buy_decision(item=self, amount=amount, buyer=buyer)
-                if buyer_decision:
-                    self.complete_transaction(buyer=buyer, seller=game.active_player, amount=amount, game=game)
-                else:
-                    self.start_auction_process(game=game)
-            else:
-                self.start_auction_process(game=game)
-
-    def start_direct_buy_process(self, game):
-        owner = self.find_owner(game.players)
-        amount = game.interface.get_amount_to_buy(owner=owner, item=self)
-        seller_decision = game.interface.get_sell_decision(item=self, seller=owner, proposed_amount=amount)
-        if seller_decision:
-            self.complete_transaction(buyer=game.active_player, seller=owner, amount=amount, game=game)
-
-    def start_auction_process(self, game):
-        seller = self.find_owner(players=game.players)
-        if not seller:
-            seller = game.bank
-            seller.property_holdings.append(self)
-        winning_bid = Auction(item=self, game=game, seller=seller).auction_item()
-        if winning_bid:
-            self.complete_transaction(buyer=winning_bid[0], seller=seller, amount=winning_bid[1], game=game)
-
     def complete_transaction(self, buyer, seller, amount, game):
         if self.mortgaged:
             """This is a grey area in the rules.  Normally, amount is just the deed price of the property, however the rules do not specify what happens if
@@ -176,15 +138,14 @@ class RailRoadTile(OwnableTile):
 
     def list_options(self, game):
         option_list = []
-        owner = self.find_owner(players=game.players)
-        if owner:
-            if owner == game.active_player:
-                sell_options = self.list_sell_options(owner=owner)
-                option_list += sell_options
-                if sell_options and not self.mortgaged and owner.liquid_holdings >= self.possible_structures[0].price:
-                    option_list.append(monopoly.Option(option_name=f'Build Transtation at {self.name}', action=self.build_train_station, item_name=self.name, category='buildstructure'))
-                if self.existing_structures:
-                    option_list.append(monopoly.Option(option_name=f'Sell Trainstation at {self.name} to the Bank for {0.5*self.existing_structures[0].price}', action=self.remove_structure, item_name=self.existing_structures[0].type, category='removestructure'))
+        owner = self.find_owner(game=game)
+        if owner == game.active_player:
+            sell_options = self.list_sell_options(owner=owner)
+            option_list += sell_options
+            if sell_options and not self.mortgaged and owner.liquid_holdings >= self.possible_structures[0].price:
+                option_list.append(monopoly.Option(option_name=f'Build Transtation at {self.name}', action=self.build_train_station, item_name=self.name, category='buildstructure'))
+            if self.existing_structures:
+                option_list.append(monopoly.Option(option_name=f'Sell Trainstation at {self.name} to the Bank for {0.5*self.existing_structures[0].price}', action=self.remove_structure, item_name=self.existing_structures[0].type, category='removestructure'))
         else:
             option_list += self.if_not_owned(active_player=game.active_player)
         return option_list
@@ -218,11 +179,10 @@ class RailRoadTile(OwnableTile):
 class UtilityTile(OwnableTile):
 
     def list_options(self, game):
-        owner = self.find_owner(game.players)
+        owner = self.find_owner(game=game)
         option_list = []
-        if owner:
-            if owner == game.active_player:
-                option_list += self.list_sell_options(owner=owner)
+        if owner == game.active_player:
+            option_list += self.list_sell_options(owner=owner)
         else:
             option_list += self.if_not_owned(active_player=game.active_player)
         return option_list
@@ -246,11 +206,10 @@ class ColorTile(OwnableTile):
     color = attr.ib(type=str, default=None)
 
     def list_options(self, game):
-        owner = self.find_owner(players=game.players)
+        owner = self.find_owner(game=game)
         option_list = []
-        if owner:
-            if owner == game.active_player:
-                option_list += self.list_sell_options(owner=owner) + self.list_buildable_structures(game=game) + self.list_removable_structures(game=game)
+        if owner == game.active_player:
+            option_list += self.list_sell_options(owner=owner) + self.list_buildable_structures(game=game) + self.list_removable_structures(game=game)
         else:
             option_list += self.if_not_owned(active_player=game.active_player)
         return option_list

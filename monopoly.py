@@ -1,5 +1,4 @@
 import monopoly_cl_interface
-import auction
 from auction import Auction
 import random
 from functools import reduce
@@ -13,7 +12,7 @@ TODO (To bring Monopoly fully inline with the rules as defined by https://www.ha
         -After completing this, remove the option_name attribute from all Option objects
     -Break Card class into two subclasses, HoldableCard and NonHoldableCard [On hold]
         -HoldableCard will inherit from OwnableItem, NonHoldableCard will not.
-    -Remove Property class: [On hold, this will be done concurrently with splitting the Card class]
+    -Remove Property class: [Done]
         -Move functionality to OwnableTile
         -This should allow me to fully merge the OwnableItem behavior implemented in both OwnableTile and OwnableCard 
     -Add a method to Player which will list the Options available to them [Done]
@@ -21,7 +20,7 @@ TODO (To bring Monopoly fully inline with the rules as defined by https://www.ha
     -Create dedicated auction module, and an Auction class within that module: [Done]
         -The Auction class will take an item to be sold, and a reference to the game. 
         -The Auction class will contain a method called auction_item(), which will handle running the auction.
-    -Modify the interface to support the above new approach to auctions[:
+    -Modify the interface to support the above new approach to auctions: [Done]
         -Add a method to the CLInterface class called get_bid(bidder, options), which returns an int representing the bid
             -get_bid() will:
                 -Present the maximum possible bid a Player can make, given their present gross worth
@@ -116,6 +115,8 @@ class Monopoly:
         self.generate_in_game_players()
         self.chance_deck.shuffle_deck()
         self.community_deck.shuffle_deck()
+        for tile in self.board:
+            self.bank.property_holdings.append(tile)
         while len(self.players) > 1:
             if self.turns % len(self.chance_deck.cards) == 0:
                 self.chance_deck.shuffle_deck()
