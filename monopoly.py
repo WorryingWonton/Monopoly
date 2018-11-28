@@ -115,8 +115,7 @@ class Monopoly:
         self.generate_in_game_players()
         self.chance_deck.shuffle_deck()
         self.community_deck.shuffle_deck()
-        for tile in self.board:
-            self.bank.property_holdings.append(tile)
+        self.bank.property_holdings += self.board
         while len(self.players) > 1:
             if self.turns % len(self.chance_deck.cards) == 0:
                 self.chance_deck.shuffle_deck()

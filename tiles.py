@@ -65,10 +65,12 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
     def buy_property(self, game):
         game.active_player.liquid_holdings -= self.price
         game.active_player.property_holdings.append(self)
+        game.bank.property_holdings.remove(self)
 
     def mortgage_property(self, game):
         game.active_player.liquid_holdings -= self.mortgage_price
         game.active_player.property_holdings.append(self)
+        game.bank.property_holdings.remove(self)
         self.mortgaged = True
 
     def mortgage_owned_property(self, game):
