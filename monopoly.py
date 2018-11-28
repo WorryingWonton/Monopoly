@@ -10,35 +10,7 @@ from itertools import cycle, islice, dropwhile
 TODO (To bring Monopoly fully inline with the rules as defined by https://www.hasbro.com/common/instruct/monins.pdf)
     -Reimplement the interface to support Option categories [On hold]
         -After completing this, remove the option_name attribute from all Option objects
-    -Break Card class into two subclasses, HoldableCard and NonHoldableCard [On hold]
-        -HoldableCard will inherit from OwnableItem, NonHoldableCard will not.
-    -Remove Property class: [Done]
-        -Move functionality to OwnableTile
-        -This should allow me to fully merge the OwnableItem behavior implemented in both OwnableTile and OwnableCard 
-    -Add a method to Player which will list the Options available to them [Done]
-        -This method will optionally take a list of categories, which it will then filter the options it returns by.
-    -Create dedicated auction module, and an Auction class within that module: [Done]
-        -The Auction class will take an item to be sold, and a reference to the game. 
-        -The Auction class will contain a method called auction_item(), which will handle running the auction.
-    -Modify the interface to support the above new approach to auctions: [Done]
-        -Add a method to the CLInterface class called get_bid(bidder, options), which returns an int representing the bid
-            -get_bid() will:
-                -Present the maximum possible bid a Player can make, given their present gross worth
-                    -Gross worth will be determined as the sum of their liquid holdings, and the sum of the immediate sell value of their sellable properties and structures.
-                -If a Player bids below their liquid holdings:
-                    -Return their bid
-                -If a Player bids above their liquid holdings, but below their gross worth:
-                    -Present them with the option list, require that they sell assets until their liquid_holdings equals or exceeds their bid
-                    -The Player's bid isn't finalized until get_bid() returns something, present the Player with two additional Options:
-                        -Quit the auction
-                        -Submit a different bid
-                    -Present a final Option to Go Bankrupt.
-                        -If chosen, return the Player's bid.
-                -If a Player bids above their gross worth:
-                    -Present the Player with the Option to retype their bid, or quit the auction.
-                        -If the Player declines either Option, return their bid.
 """
-
 
 class Monopoly:
 
