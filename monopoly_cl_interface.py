@@ -127,7 +127,7 @@ Enter an amount larger than {highest_bid}, enter an equal or smaller amount to q
         option_string = ''
         for n, option in enumerate(option_list, start=start):
             option_string += f'''
-        {n}: {option.option_name}'''
+            {n}: {option.option_name}'''
         return option_string
 
     #What's a good way to consolidate this with ml_printer?
@@ -140,11 +140,18 @@ Enter an amount larger than {highest_bid}, enter an equal or smaller amount to q
 
     def get_bid(self, bidder, item, highest_bid, seller):
         print(f'Auction for {item.name} sold by {seller.name}!')
-        bid = self.get_number(input_message=f"""
+        if not highest_bid:
+            bid = self.get_number(input_message=f"""
             {bidder.name}, your current liquid holdings are ${bidder.liquid_holdings}, and you have a gross worth of ${bidder.find_gross_worth()}
-            The current highest bid for {item.name} is ${highest_bid}
+            You are the first bidder.
             To exit the auction, enter a value less than ${highest_bid}
             How much would you like to bid?  $""")
+        else:
+            bid = self.get_number(input_message=f"""
+                {bidder.name}, your current liquid holdings are ${bidder.liquid_holdings}, and you have a gross worth of ${bidder.find_gross_worth()}
+                The current highest bid for {item.name} is ${highest_bid}
+                To exit the auction, enter a value less than ${highest_bid}
+                How much would you like to bid?  $""")
         if bid < bidder.liquid_holdings:
             return bid
         elif bid > bidder.liquid_holdings and bid < bidder.find_gross_worth():
@@ -157,7 +164,7 @@ Enter an amount larger than {highest_bid}, enter an equal or smaller amount to q
             1. Enter a different bid
             2. Quit the auction (your bid will not be counted)
             3. Submit bid anyways (This will cause you to go bankrupt)
-                {self.ml_printer(option_list=options, start=4)}
+            {self.ml_printer(option_list=options, start=4)}
             Pick a number from the list and press Enter: """)
                 if selection == 1:
                     new_bid = self.get_number(input_message=f'Enter a new bid, {bidder.name}: ')
@@ -174,6 +181,7 @@ Enter an amount larger than {highest_bid}, enter an equal or smaller amount to q
                         self.game.execute_player_decision(active_player_decision=options[selection - 4])
                     else:
                         continue
+            return bid
         else:
             return bid
 

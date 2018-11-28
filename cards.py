@@ -50,7 +50,7 @@ class Card(ownable_item.OwnableItem):
 
     def start_auction_process(self, game):
         seller = self.find_owner(game=game)
-        winning_bid = game.auction_engine.auction_item(item=self, seller=seller)
+        winning_bid = Auction(game=game, item=self, seller=seller).auction_item()
         if winning_bid:
             if winning_bid[0].liquid_holdings < winning_bid[1]:
                 game.run_bankruptcy_process(debtor=winning_bid[0], creditor=game.active_player)

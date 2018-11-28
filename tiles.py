@@ -2,6 +2,7 @@ import attr
 import monopoly
 import ownable_item
 from math import floor
+from auction import Auction
 
 class Property:
 
@@ -123,15 +124,16 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
     def start_direct_sale_process(self, game):
         amount = game.interface.get_amount_to_sell(item=self.property)
         eligible_buyers = self.find_eligible_buyers(game=game, amount=amount)
-        buyer = game.interface.pick_eligible_buyer(eligible_buyers)
-        if buyer:
-            buyer_decision = game.interface.get_buy_decision(item=self.property, amount=amount, buyer=buyer)
-            if buyer_decision:
-                self.complete_transaction(buyer=buyer, seller=game.active_player, amount=amount, game=game)
+        if eligible_buyers:
+            buyer = game.interface.pick_eligible_buyer(eligible_buyers)
+            if buyer:
+                buyer_decision = game.interface.get_buy_decision(item=self.property, amount=amount, buyer=buyer)
+                if buyer_decision:
+                    self.complete_transaction(buyer=buyer, seller=game.active_player, amount=amount, game=game)
+                else:
+                    self.start_auction_process(game=game)
             else:
                 self.start_auction_process(game=game)
-        else:
-            self.start_auction_process(game=game)
 
     def start_direct_buy_process(self, game):
         owner = self.find_owner(game.players)
@@ -145,7 +147,7 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
         if not seller:
             seller = game.bank
             seller.property_holdings.append(self)
-        winning_bid = game.auction_engine.auction_item(item=self.property, seller=seller)
+        winning_bid = Auction(item=self.property, game=game, seller=seller).auction_item()
         if winning_bid:
             self.complete_transaction(buyer=winning_bid[0], seller=seller, amount=winning_bid[1], game=game)
 

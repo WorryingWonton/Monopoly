@@ -1,5 +1,5 @@
 import monopoly_cl_interface
-import auction
+from auction import Auction
 import random
 from functools import reduce
 import cards
@@ -53,7 +53,6 @@ class Monopoly:
         self.bank = Bank(game=self)
         self.dice_roll = None
         self.continue_current_turn = True
-        self.auction_engine = auction.Auction(game=self)
         if not interface:
             self.interface = monopoly_cl_interface.CLInterface(game=self)
         else:
@@ -158,11 +157,11 @@ class Monopoly:
 
     def run_bank_auction(self):
         for tile in self.bank.property_holdings:
-            winning_bid = self.auction_engine.auction_item(item=tile.property, seller=self.bank)
+            winning_bid = Auction(game=self, item=tile.property, seller=self.bank).auction_item()
             if winning_bid:
                 tile.complete_transaction(buyer=winning_bid[0], seller=self.bank, amount=winning_bid[1], game=self)
         for card in self.bank.hand:
-            winning_bid = self.auction_engine.auction_item(item=card, seller=self.bank)
+            winning_bid = Auction(game=self, item=card, seller=self.bank).auction_item()
             if winning_bid:
                 card.complete_transaction(buyer=winning_bid[0], seller=self.bank, amount=winning_bid[1], game=self)
         self.bank.property_holdings = []

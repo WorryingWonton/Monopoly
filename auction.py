@@ -1,11 +1,11 @@
-from itertools import islice, dropwhile, cycle
-
 class Auction:
 
-    def __init__(self, game):
+    def __init__(self, game, item, seller):
         self.game = game
+        self.item = item
+        self.seller = seller
         self.current_bidder = None
-        self.highest_bid = 0
+        self.highest_bid = None
         self.bidders = []
         self.highest_bidder = None
 
@@ -19,16 +19,19 @@ class Auction:
     def remove_bidder(self, bidder):
         bidder.in_auction = False
 
-    def auction_item(self, item, seller):
+    def auction_item(self):
         self.bidders = self.game.players
         while len(self.bidders) > 1:
             self.set_current_bidder()
-            bid = self.game.interface.get_bid(bidder=self.current_bidder, item=item, highest_bid=self.highest_bid, seller=seller)
-            if bid and bid > self.highest_bid:
-                self.highest_bid = bid
-                self.highest_bidder = self.current_bidder
+            if self.current_bidder == self.highest_bidder:
+                continue
             else:
-                self.remove_bidder(bidder=self.current_bidder)
+                bid = self.game.interface.get_bid(bidder=self.current_bidder, item=self.item, highest_bid=self.highest_bid, seller=self.seller)
+                if self.highest_bid is None or bid > self.highest_bid:
+                    self.highest_bid = bid
+                    self.highest_bidder = self.current_bidder
+                else:
+                    self.remove_bidder(bidder=self.current_bidder)
         for player in self.game.players:
             player.in_auction = True
         return (self.highest_bidder, self.highest_bid)
