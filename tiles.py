@@ -33,26 +33,15 @@ class Tile:
                     option_list.append(monopoly.Option(option_name=f'''Request to buy {tile.name} from {n_tuple[1].name} --- (Property deed price is {tile.price}) --- Property IS NOT Mortgaged''', action=tile.start_direct_buy_process, item_name=f'{tile.name}', category='buyownedproperty'))
         return option_list
 
-# class Property:
-#
-#     def __init__(self, name, price, mortgage_price, possible_structures, base_rent):
-#         self.name = name
-#         self.price = price
-#         self.mortgage_price = mortgage_price
-#         self.possible_structures = possible_structures
-#         self.base_rent = base_rent
-#         self.existing_structures = []
-#         self.mortgaged = False
 
 @attr.s
 class OwnableTile(Tile, ownable_item.OwnableItem):
-
     name = attr.ib(type=str)
     price = attr.ib(type=int)
     mortgage_price = attr.ib(type=int)
     base_rent = attr.ib(type=int)
     possible_structures = attr.ib(type=list)
-    existing_stuctures = attr.ib(type=list)
+    existing_structures = attr.ib(type=list, default=[])
     mortgaged = attr.ib(type=bool, default=False)
 
     def perform_auto_actions(self, game):
@@ -254,7 +243,7 @@ class UtilityTile(OwnableTile):
 
 @attr.s
 class ColorTile(OwnableTile):
-    color = attr.ib(type=str)
+    color = attr.ib(type=str, default=None)
 
     def list_options(self, game):
         owner = self.find_owner(players=game.players)
