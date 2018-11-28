@@ -1,4 +1,5 @@
 import monopoly_cl_interface
+import auction
 from auction import Auction
 import random
 from functools import reduce
@@ -8,7 +9,7 @@ from itertools import cycle, islice, dropwhile
 
 """
 TODO (To bring Monopoly fully inline with the rules as defined by https://www.hasbro.com/common/instruct/monins.pdf)
-    -Reimplement the interface to support Option categories [On hold, but mostly complete]
+    -Reimplement the interface to support Option categories [On hold]
         -After completing this, remove the option_name attribute from all Option objects
     -Break Card class into two subclasses, HoldableCard and NonHoldableCard [On hold]
         -HoldableCard will inherit from OwnableItem, NonHoldableCard will not.
@@ -140,12 +141,12 @@ class Monopoly:
         if debtor.liquid_holdings >= 0:
             creditor.liquid_holdings += debtor.liquid_holdings
         for tile in debtor.property_holdings:
-            if tile.property.mortgaged:
-                creditor.liquid_holdings -= 0.1 * tile.property.mortgage_price
-            for structure in tile.property.existing_structures:
+            if tile.mortgaged:
+                creditor.liquid_holdings -= 0.1 * tile.mortgage_price
+            for structure in tile.existing_structures:
                 creditor.liquid_holdings += 0.5 * structure.price
                 #Remove all structures after sale to bank
-            tile.property.existing_structures = []
+            tile.existing_structures = []
             creditor.property_holdings.append(tile)
         creditor.hand = debtor.hand
         self.remove_player(debtor)
@@ -157,7 +158,7 @@ class Monopoly:
 
     def run_bank_auction(self):
         for tile in self.bank.property_holdings:
-            winning_bid = Auction(game=self, item=tile.property, seller=self.bank).auction_item()
+            winning_bid = Auction(game=self, item=tile, seller=self.bank).auction_item()
             if winning_bid:
                 tile.complete_transaction(buyer=winning_bid[0], seller=self.bank, amount=winning_bid[1], game=self)
         for card in self.bank.hand:
@@ -234,12 +235,12 @@ class Player:
     def calculate_taxable_assets(self):
         assets = self.liquid_holdings
         for tile in self.property_holdings:
-            if tile.property.mortgaged:
-                assets += tile.property.mortgage_price
+            if tile.mortgaged:
+                assets += tile.mortgage_price
             else:
-                assets += tile.property.price
-            if len(tile.property.existing_structures) > 0:
-                for structure in tile.property.existing_structures:
+                assets += tile.price
+            if len(tile.existing_structures) > 0:
+                for structure in tile.existing_structures:
                   assets += structure.price/2
         return assets
 
@@ -249,10 +250,10 @@ class Player:
             options = tile.list_options(game=self.game)
             for option in options:
                 if option.category in ['selltobank', 'mortgageownedproperty']:
-                    gross_worth += tile.property.price/2
+                    gross_worth += tile.price/2
                     break
                 elif option.category == 'removestructure':
-                    gross_worth += tile.property.existing_structures[-1].price
+                    gross_worth += tile.existing_structures[-1].price
         return gross_worth
 
     def compute_advancement_amount(self, target_position):

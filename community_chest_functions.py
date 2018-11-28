@@ -7,7 +7,7 @@ def get_tile_positions(game, target=None, name=None):
         return [tile.position for tile in game.board if isinstance(tile, target)]
     if name:
         ownable_tiles = list(filter(lambda tile: isinstance(tile, OwnableTile), game.board))
-        return [tile.position for tile in ownable_tiles if tile.property.name == name][0]
+        return [tile.position for tile in ownable_tiles if tile.name == name][0]
 
 def advance_to_go(game):
     tile_position = get_tile_positions(target=GoTile, game=game)
@@ -78,9 +78,9 @@ def receive_25_consultancy_fee(game):
 
 def you_are_assessed_for_street_repairs(game):
     amount_assessed = 0
-    color_tiles_with_structures = [tile for tile in game.active_player.property_holdings if len(tile.property.existing_structures) > 0 and isinstance(tile, ColorTile)]
+    color_tiles_with_structures = [tile for tile in game.active_player.property_holdings if len(tile.existing_structures) > 0 and isinstance(tile, ColorTile)]
     for tile in color_tiles_with_structures:
-        for structure in tile.property.existing_structures:
+        for structure in tile.existing_structures:
             if structure.type == 'hotel':
                 amount_assessed += 115
             if structure.type == 'house':

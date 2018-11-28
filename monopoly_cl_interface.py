@@ -1,7 +1,5 @@
-from monopoly import *
 from distutils.util import strtobool
-
-
+from monopoly import *
 class CLInterface():
     def __init__(self, game):
         self.game = game

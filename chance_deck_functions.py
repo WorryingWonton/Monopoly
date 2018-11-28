@@ -7,7 +7,7 @@ def get_tile_positions(game, target=None, name=None):
         return [tile.position for tile in game.board if isinstance(tile, target)]
     if name:
         ownable_tiles = list(filter(lambda tile: isinstance(tile, OwnableTile), game.board))
-        return [tile.position for tile in ownable_tiles if tile.property.name == name][0]
+        return [tile.position for tile in ownable_tiles if tile.name == name][0]
 
 def advance_to_go(game):
     tile_position = get_tile_positions(target=GoTile, game=game)
@@ -61,7 +61,7 @@ def go_to_jail(game):
     game.board[game.active_player.position].perform_auto_actions(game=game)
 
 def make_general_repairs_on_all_property(game):
-    color_tiles = [tile for tile in game.active_player.property_holdings if isinstance(tile, ColorTile) and len(tile.property.existing_structures) > 0]
+    color_tiles = [tile for tile in game.active_player.property_holdings if isinstance(tile, ColorTile) and len(tile.existing_structures) > 0]
     repair_cost = 0
     for tile in color_tiles:
         for structure in tile.existing_structures:
