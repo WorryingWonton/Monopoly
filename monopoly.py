@@ -5,7 +5,8 @@ from functools import reduce
 import cards
 import board
 from itertools import cycle, islice, dropwhile
-
+from tiles import OwnableTile
+from cards import HoldableCard
 """
 TODO (To bring Monopoly fully inline with the rules as defined by https://www.hasbro.com/common/instruct/monins.pdf)
     -Reimplement the interface to support Option categories [On hold]
@@ -109,17 +110,19 @@ class Monopoly:
         self.turns += 1
 
     def run_bankruptcy_process(self, creditor, debtor):
-        #Perhaps unnecessary check to make sure the creditor is not being passed on debt
         if debtor.liquid_holdings >= 0:
             creditor.liquid_holdings += debtor.liquid_holdings
         for tile in debtor.property_holdings:
             if tile.mortgaged:
-                creditor.liquid_holdings -= 0.1 * tile.mortgage_price
+                creditor.liquid_holdingsq -= 0.1 * tile.mortgage_price
             for structure in tile.existing_structures:
                 creditor.liquid_holdings += 0.5 * structure.price
-                #Remove all structures after sale to bank
+            if creditor == self.bank:
+                self.bank.reserved_holdings.append(tile)
+                self.bank.structure_repository += tile.existing_structures
+            else:
+                creditor.property_holdings.append(tile)
             tile.existing_structures = []
-            creditor.property_holdings.append(tile)
         creditor.hand = debtor.hand
         self.remove_player(debtor)
         self.generate_in_game_players()
@@ -129,16 +132,20 @@ class Monopoly:
             self.run_bank_auction()
 
     def run_bank_auction(self):
-        for tile in self.bank.property_holdings:
-            winning_bid = Auction(game=self, item=tile, seller=self.bank).auction_item()
+        for item in self.bank.reserved_holdings:
+            winning_bid = Auction(game=self, item=item, seller=self.bank).auction_item()
             if winning_bid:
-                tile.complete_transaction(buyer=winning_bid[0], seller=self.bank, amount=winning_bid[1], game=self)
-        for card in self.bank.hand:
-            winning_bid = Auction(game=self, item=card, seller=self.bank).auction_item()
-            if winning_bid:
-                card.complete_transaction(buyer=winning_bid[0], seller=self.bank, amount=winning_bid[1], game=self)
-        self.bank.property_holdings = []
-        self.bank.hand = []
+                item.complete_transaction(buyer=winning_bid[0], seller=self.bank, amount=winning_bid[1], game=self)
+        for item in self.bank.reserved_holdings:
+            if isinstance(item, OwnableTile):
+                self.bank.property_holdings.append(item)
+            if isinstance(item, HoldableCard):
+                if item.parent_deck == 'Community Chest':
+                    self.community_deck.append(item)
+                else:
+                    self.chance_deck.append(item)
+        if self.bank.reserved_holdings:
+            raise Exception(f'''Unexpected items in Bank reserved holdings.  Holdings are: {self.bank.reserved_holdings}''')
 
     def check_for_doubles(self):
         return self.dice_roll[0] == self.dice_roll[1]
@@ -184,6 +191,9 @@ class Bank:
         self.property_holdings = []
         self.liquid_holdings = 0
         self.hand = []
+        #Can be populated with OwnableTile and HoldableCard objects
+        self.reserved_holdings = []
+        self.structure_repository = []
 
 class Player:
 
