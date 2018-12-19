@@ -134,8 +134,8 @@ class Monopoly:
     def run_bank_auction(self):
         for item in self.bank.reserved_holdings:
             winning_bid = Auction(game=self, item=item, seller=self.bank).auction_item()
-            if winning_bid:
-                item.complete_transaction(buyer=winning_bid[0], seller=self.bank, amount=winning_bid[1], game=self)
+            if winning_bid and winning_bid[0]:
+                    item.complete_transaction(buyer=winning_bid[0], seller=self.bank, amount=winning_bid[1], game=self)
         for item in self.bank.reserved_holdings:
             if isinstance(item, OwnableTile):
                 self.bank.property_holdings.append(item)
@@ -144,8 +144,7 @@ class Monopoly:
                     self.community_deck.append(item)
                 else:
                     self.chance_deck.append(item)
-        if self.bank.reserved_holdings:
-            raise Exception(f'''Unexpected items in Bank reserved holdings.  Holdings are: {self.bank.reserved_holdings}''')
+        self.bank.reserved_holdings = []
 
     def check_for_doubles(self):
         return self.dice_roll[0] == self.dice_roll[1]

@@ -124,9 +124,10 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
         if buyer.liquid_holdings < amount:
             return game.run_bankruptcy_process(debtor=buyer, creditor=seller)
         seller.liquid_holdings += amount
-        seller.property_holdings.remove(self)
-        buyer.property_holdings.append(self)
-        buyer.liquid_holdings -= amount
+        if self in seller.property_holdings:
+            seller.property_holdings.remove(self)
+            buyer.property_holdings.append(self)
+            buyer.liquid_holdings -= amount
 
     def remove_structure(self, game):
         pass
@@ -149,7 +150,8 @@ class RailRoadTile(OwnableTile):
             if self.existing_structures:
                 option_list.append(monopoly.Option(option_name=f'Sell Trainstation at {self.name} to the Bank for {0.5*self.existing_structures[0].price}', action=self.remove_structure, item_name=self.existing_structures[0].type, category='removestructure'))
         else:
-            option_list += self.if_not_owned(active_player=game.active_player)
+            if owner == game.bank:
+                option_list += self.if_not_owned(active_player=game.active_player)
         return option_list
 
     def assess_rent(self, owner, game):
@@ -186,7 +188,8 @@ class UtilityTile(OwnableTile):
         if owner == game.active_player:
             option_list += self.list_sell_options(owner=owner)
         else:
-            option_list += self.if_not_owned(active_player=game.active_player)
+            if owner == game.bank:
+                option_list += self.if_not_owned(active_player=game.active_player)
         return option_list
 
     def assess_rent(self, owner, game):
@@ -213,7 +216,8 @@ class ColorTile(OwnableTile):
         if owner == game.active_player:
             option_list += self.list_sell_options(owner=owner) + self.list_buildable_structures(game=game) + self.list_removable_structures(game=game)
         else:
-            option_list += self.if_not_owned(active_player=game.active_player)
+            if owner == game.bank:
+                option_list += self.if_not_owned(active_player=game.active_player)
         return option_list
 
     def assess_rent(self, game, owner):

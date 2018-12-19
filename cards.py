@@ -27,7 +27,8 @@ class HoldableCard(Card, OwnableItem):
             buyer.liquid_holdings += amount
             game.run_bankruptcy_process(creditor=seller, debtor=buyer)
             return
-        seller.hand.remove(self)
+        if self in seller.hand:
+            seller.hand.remove(self)
         seller.liquid_holdings += amount
         buyer.hand.append(self)
 

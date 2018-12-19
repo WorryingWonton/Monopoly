@@ -44,7 +44,7 @@ class OwnableItem:
         winning_bid = Auction(game=game, item=self, seller=seller).auction_item()
         if winning_bid:
             if winning_bid[0].liquid_holdings < winning_bid[1]:
-                game.run_bankruptcy_process(debtor=winning_bid[0], creditor=game.active_player)
+                game.run_bankruptcy_process(debtor=winning_bid[0], creditor=seller)
             else:
                 self.complete_transaction(buyer=winning_bid[0], seller=seller, amount=winning_bid[1], game=game)
 
