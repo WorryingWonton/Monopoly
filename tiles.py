@@ -4,13 +4,33 @@ import ownable_item
 from math import floor
 from auction import Auction
 
+"""
+The last great TODO for the core game logic:  Make OwanbleItem.start_direct_buy_process() THE way to purchase and mortgage properties
+"""
 
-class Structure:
+class Structure(ownable_item.OwnableItem):
+
     def __init__(self, type, price, rent):
         self.type = type
         self.price = price
         self.rent = rent
 
+    def complete_transaction(self, buyer, seller, amount, game):
+        if amount < self.price:
+            return
+        else:
+            if amount > buyer.liquid_holdings:
+                game.run_bankruptcy_process(creditor=seller, debtor=buyer)
+            else:
+                for tile in buyer.property_holdings:
+                    for structure in tile.possible_structures:
+                        if structure == self:
+                            tile.existing_structures.append(self)
+                if seller == game.bank:
+                    if self.type == 'house':
+                        game.bank.available_houses -= 1
+                    if self.type == 'hotel':
+                        game.bank.available_hotels -= 1
 
 @attr.s
 class Tile:

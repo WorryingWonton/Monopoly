@@ -11,6 +11,20 @@ from cards import HoldableCard
 TODO (To bring Monopoly fully inline with the rules as defined by https://www.hasbro.com/common/instruct/monins.pdf)
     -Reimplement the interface to support Option categories [On hold]
         -After completing this, remove the option_name attribute from all Option objects
+    -Add support for building shortages:
+        
+        
+        -32 houses, 12 hotels if building shortages is enabled
+        -In the Bank class, add two integer attributes:
+            -Bank.remaining_houses = 32
+            -Bank.remaining_hotels = 12
+        -House case:
+            if self.game.bank.remaining_houses == 1 and self.game.active_player.list_options_in_categories(categories='buildhouse'):
+                participants = [player for player in self.game.players if player != self.active_player and player.list_options_in_categories(categories=['buildhouse']]
+                if participants:
+                    winning_bid = Auction(game=game, item=self.game.active_player.position.possible_structures[len(self.game.active_player.existing_structures)], seller=self.game.bank]
+                    if winning_bid:
+                        s
 """
 
 class Monopoly:
@@ -30,7 +44,6 @@ class Monopoly:
             self.interface = monopoly_cl_interface.CLInterface(game=self)
         else:
             self.interface = interface
-
 
     def add_player(self, name):
         self.all_players.append(Player(name, game=self))
@@ -194,6 +207,8 @@ class Bank:
         #Can be populated with OwnableTile and HoldableCard objects
         self.reserved_holdings = []
         self.structure_repository = []
+        self.available_houses = 32
+        self.available_hotels = 12
 
 class Player:
 
