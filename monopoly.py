@@ -11,6 +11,9 @@ from cards import HoldableCard
 TODO (To bring Monopoly fully inline with the rules as defined by https://www.hasbro.com/common/instruct/monins.pdf)
     -Reimplement the interface to support Option categories [On hold]
         -After completing this, remove the option_name attribute from all Option objects
+    -Add support for limited structures, the rules state there should be a set number of houses and hotels.
+        -Bank will initially hold all structures 
+
 """
 
 class Monopoly:
