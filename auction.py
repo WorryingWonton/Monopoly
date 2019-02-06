@@ -26,7 +26,8 @@ class Auction:
             if self.current_bidder == self.highest_bidder:
                 continue
             else:
-                bid = self.game.interface.get_bid(bidder=self.current_bidder, item=self.item, highest_bid=self.highest_bid, seller=self.seller)
+                # bid = self.game.interface.get_bid(bidder=self.current_bidder, item=self.item, highest_bid=self.highest_bid, seller=self.seller)
+                bid = self.get_bid()
                 if self.highest_bid is None or bid > self.highest_bid:
                     self.highest_bid = bid
                     self.highest_bidder = self.current_bidder
@@ -35,3 +36,49 @@ class Auction:
         for player in self.game.players:
             player.in_auction = True
         return (self.highest_bidder, self.highest_bid)
+
+    def get_bid(self):
+        bid = self.game.interface.get_bid(bidder=self.current_bidder, item=self.item, highest_bit=self.highest_bid, seller=self.seller)
+        if bid > self.current_bidder.liquid_holdings and bid < self.current_bidder.find_gross_worth():
+            self.case_2(bid=bid)
+        else:
+            return bid
+
+    def case_2(self, bid):
+        """
+        case_2() is called when a bidder submits a bid valued between their current liquid holdings and their guaranteed gross worth.
+        This method, and its associated interface methods, provide the bidder with the options to:
+            1.  Submit a different bid
+            2.  Submit no bid and back out of the auction
+            3.  Proceed with their bid as is, and hope another player bids a larger amount
+            4-n. Sell or mortgage some of their assets to the Bank.
+        :param int bid: An integer representing the bid
+        :return None:  This method has the side effects of removing the bidder from auction, increasing the bidder's liquid_holdings, or doing nothing.
+        """
+        while self.current_bidder.liquid_holdings < self.highest_bid:
+            options = self.current_bidder.list_options_in_categories(categories=['selltobank', 'mortgageownedproperty', 'removestructure'])
+            selection = self.game.interface.auction_case_2(bidder=self.current_bidder, options=options, bid=self.highest_bid)
+            if selection == 1:
+                self.game.interface.re_bid(current_bid=bid, bidder=self.current_bidder)
+            elif selection == 2:
+                self.remove_bidder(bidder=self.current_bidder)
+            elif selection == 3:
+                return
+            else:
+                self.game.execute_player_decsion(options[selection - 4])
+
+
+
+
+
+
+        """
+        Case 1:  Amount bid is less than or equal to the bidder's current liquid assets
+            -Return the bid
+        Case 2:  Amount bid is between the bidder's current liquid assets and their gross worth
+            -Note that a bidder's gross worth is determined by the immediate sell price of the properties and structures they hold
+            +Give the current bidder the Option to sell some of their current properties to the Bank, OR
+                -Submit their bid anyways and hope another higher bidder comes along before the auction is finished
+        Case 3:  Amount bid is greather than the bidder's gross worth
+            -Well, either someone bids higher, or they go bankrupt.
+        """

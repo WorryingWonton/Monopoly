@@ -13,6 +13,10 @@ TODO (To bring Monopoly fully inline with the rules as defined by https://www.ha
         -After completing this, remove the option_name attribute from all Option objects
     -Add support for limited structures, the rules state there should be a set number of houses and hotels.
         -Bank will initially hold all structures 
+    -Fix two issues with auctions:
+        -An auction can be initiated during a failed sell attempt for an item even if there are only two Players in the game
+            -One thing to note with this is that the seller will also end up in the auction
+                -The simplest fix for this would be to ensure that an 
 
 """
 

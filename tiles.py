@@ -106,6 +106,7 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
         return option_list
 
     def sell_to_bank(self, game):
+        """Sell to Bank removes an OwnableTile from a Player's property holdings and """
         game.active_player.liquid_holdings += self.price * 0.5
         game.active_player.property_holdings.remove(self)
 

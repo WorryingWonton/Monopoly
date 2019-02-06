@@ -98,29 +98,6 @@ Would you like to sell for this price?  Enter Yes or No:  ''').lower())
                 print('Enter \'Yes\' or \'No\':  ')
         return sell_decision
 
-    def run_auction(self, item, seller):
-        participants = list(filter(lambda player: player != seller, self.game.players))
-        winning_bid = ()
-        highest_bid = 0
-        while len(participants) > 1:
-            for player in participants:
-                current_bid = input(f'''
-{player.name}, the highest bid for {item.name} is currently {highest_bid}.
-If you quit after submitting a bid, you are required to buy the item up for auction, if your bid is the highest bid.
-Enter an amount larger than {highest_bid}, enter an equal or smaller amount to quit the auction:  ''')
-                try:
-                    int(current_bid)
-                except:
-                    participants.remove(player)
-                    break
-                current_bid = int(current_bid)
-                if current_bid <= highest_bid:
-                    participants.remove(player)
-                else:
-                    highest_bid = current_bid
-                    winning_bid = (player, highest_bid)
-        return winning_bid
-
     def ml_printer(self, option_list, start=1):
         option_string = ''
         for n, option in enumerate(option_list, start=start):
@@ -136,6 +113,31 @@ Enter an amount larger than {highest_bid}, enter an equal or smaller amount to q
         {n}: {player.name}'''
         return option_string
 
+    def auction_sell_assets_to_bank(self, bidder, options, bid):
+        """
+        This method presents a Player with options to sell their assets (where applicable) to the Bank.
+        It takes a Player object and a list of Option objects as inputs and returns an Int represeting the bidder's choice
+        :param Player bidder:  Player object
+        :param List options: List of Option objects
+        :return: None
+        """
+        selection = self.get_number(input_message=f"""
+        Overbid Warning!
+        {bidder.name}, your bid exceeds your liquid holdings (${bidder.liquid_holdings}) by ${bid - bidder.liquid_holdings}
+        Your options are:
+            1. Enter a different bid
+            2. Quit the auction (your bid will not be counted)
+            3. Submit bid anyways (This will cause you to go bankrupt)
+            {self.ml_printer(option_list=options, start=4)}
+            Pick a number from the list and press Enter: """)
+        return selection
+
+    def re_bid(self, bidder, current_bid):
+        new_bid = self.get_number(input_message=f"""
+        {bidder.name}, your current bid is ${current_bid}, you have chosen to enter a different bid.
+        What is your new bid?  $""")
+        return new_bid
+
     def get_bid(self, bidder, item, highest_bid, seller):
         print(f'Auction for {item.name} sold by {seller.name}!')
         if not highest_bid:
@@ -150,38 +152,7 @@ Enter an amount larger than {highest_bid}, enter an equal or smaller amount to q
                 The current highest bid for {item.name} is ${highest_bid}
                 To exit the auction, enter a value less than ${highest_bid}
                 How much would you like to bid?  $""")
-        if bid < bidder.liquid_holdings:
-            return bid
-        elif bid > bidder.liquid_holdings and bid < bidder.find_gross_worth():
-            while bidder.liquid_holdings < bid:
-                options = bidder.list_options_in_categories(categories=['selltobank', 'mortgageownedproperty', 'removestructure'])
-                selection = self.get_number(input_message=f"""
-        Overbid Warning!
-        {bidder.name}, your bid exceeds your liquid holdings (${bidder.liquid_holdings}) by ${bid - bidder.liquid_holdings}
-        Your options are:
-            1. Enter a different bid
-            2. Quit the auction (your bid will not be counted)
-            3. Submit bid anyways (This will cause you to go bankrupt)
-            {self.ml_printer(option_list=options, start=4)}
-            Pick a number from the list and press Enter: """)
-                if selection == 1:
-                    new_bid = self.get_number(input_message=f'Enter a new bid, {bidder.name}: ')
-                    if new_bid <= bidder.liquid_holdings:
-                        return new_bid
-                    else:
-                        continue
-                elif selection == 2:
-                    return 0
-                elif selection == 3:
-                    return bid
-                else:
-                    if selection in range(3, len(options) + 4):
-                        self.game.execute_player_decision(active_player_decision=options[selection - 4])
-                    else:
-                        continue
-            return bid
-        else:
-            return bid
+        return bid
 
     def get_number(self, input_message):
         while True:
