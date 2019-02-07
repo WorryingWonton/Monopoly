@@ -5,11 +5,40 @@ from math import floor
 from auction import Auction
 
 
-class Structure:
+class Structure(ownable_item.OwnableItem):
+
+    """
+    My code will handle buying and selling Structures in the following ways:
+        -Buying Structures:
+            -The Option to buy a structure should only appear if the Player is able to place the structure on one of their tiles.
+            -If two or more Players are able to build a structure, and the active player wishes (and is able) to buy a structure, AND the Bank only has one structure of that type left, then:
+                -The structure shall be put up for auction.
+                    -This is probably best handled in complete_transaction()
+        -Selling Structures:
+            -Structures can be sold to other eligible Players
+                -Eligibility meaning the Players can both afford to buy the Structure AND have properties which can be developed.
+        -Other Notes:
+            -Players cannot buy structures unless they have a property on which to put them.
+                -This is so players cannot hoard structures
+            -When the game starts (in Monopoly.run_game() specifically), the Bank has a list attribute filled with the following:
+                -32 Houses
+                -12 Hotels
+                -4 Railroads
+            -Modifications:
+                -RailRoadTile and ColorTile will need to have their remove_structure() and build_structure() equivalent methods
+                modified to accommodate the new changes.
+            -Structues could also be unlimited, though for the time being it might not make sense to not implement this feature.
+    """
+
+
     def __init__(self, type, price, rent):
         self.type = type
         self.price = price
         self.rent = rent
+
+    def complete_transaction(self, buyer, seller, amount, game):
+
+        pass
 
 
 @attr.s
@@ -106,9 +135,11 @@ class OwnableTile(Tile, ownable_item.OwnableItem):
         return option_list
 
     def sell_to_bank(self, game):
-        """Sell to Bank removes an OwnableTile from a Player's property holdings and """
-        game.active_player.liquid_holdings += self.price * 0.5
-        game.active_player.property_holdings.remove(self)
+        """Sell to Bank removes an OwnableTile from a Player's property holdings and returns it to the Bank"""
+        owner = self.find_owner(game=game)
+        owner.liquid_holdings += self.price * 0.5
+        owner.property_holdings.remove(self)
+        game.bank.property_holdings.append(self)
 
     def complete_transaction(self, buyer, seller, amount, game):
         if self.mortgaged:

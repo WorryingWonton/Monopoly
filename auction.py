@@ -66,19 +66,3 @@ class Auction:
                 return
             else:
                 self.game.execute_player_decsion(options[selection - 4])
-
-
-
-
-
-
-        """
-        Case 1:  Amount bid is less than or equal to the bidder's current liquid assets
-            -Return the bid
-        Case 2:  Amount bid is between the bidder's current liquid assets and their gross worth
-            -Note that a bidder's gross worth is determined by the immediate sell price of the properties and structures they hold
-            +Give the current bidder the Option to sell some of their current properties to the Bank, OR
-                -Submit their bid anyways and hope another higher bidder comes along before the auction is finished
-        Case 3:  Amount bid is greather than the bidder's gross worth
-            -Well, either someone bids higher, or they go bankrupt.
-        """
