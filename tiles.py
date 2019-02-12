@@ -28,17 +28,44 @@ class Structure(ownable_item.OwnableItem):
                 -RailRoadTile and ColorTile will need to have their remove_structure() and build_structure() equivalent methods
                 modified to accommodate the new changes.
             -Structues could also be unlimited, though for the time being it might not make sense to not implement this feature.
+
+    With the rules now set, the trick is to figure out how to go about buying a selling Structures.
+    The problem is that Structures need to be removed from a specific Tile and also placed on a specific Tile:
+        -Structures do not know what Tile they're on.
+            -This could be solved by adding a current_tile attribute.
+            -Structure.current_tile would initially be set to None, then set to whatever Tile it's placed on.
+                -If the Structure is sold to the Bank, then the attribute will be set to None again.
+        -There currently is no way to set the current_tile atribute
+            -The changes to enable this need to occur in the following places:
+                -ColorTile.build_structure() and ColorTile.remove_structure()
+
     """
 
 
-    def __init__(self, type, price, rent):
+    def __init__(self, type, price, rent, current_tile=None):
         self.type = type
         self.price = price
         self.rent = rent
+        self.current_tile = current_tile
 
     def complete_transaction(self, buyer, seller, amount, game):
+        """
+        :param Player buyer:
+        :param Player seller:
+        :param amount:
+        :param game:
+        :return:
+        """
+        if self.price <= buyer.liquid_holdings:
+            if seller == game.bank:
+                pass
 
+    def add_structure_to_tile(self, buyer):
         pass
+
+    def remove_structure_from_tile(self, seller):
+        pass
+
 
 
 @attr.s
@@ -254,7 +281,10 @@ class ColorTile(OwnableTile):
 
     def assess_rent(self, game, owner):
         if not self.existing_structures:
-            rent = self.base_rent
+            if self.is_color_group_filled(game=game):
+                rent = 2 * self.base_rent
+            else:
+                rent = self.base_rent
         else:
             rent = self.existing_structures[-1].rent
         if rent > game.active_player.liquid_holdings:
@@ -264,7 +294,7 @@ class ColorTile(OwnableTile):
             game.active_player.liquid_holdings -= rent
 
     def list_buildable_structures(self, game):
-        if self.determine_if_buildable(game=game):
+        if self.is_color_group_filled(game=game):
             struct_tuples = [(tile, len(tile.existing_structures)) for tile in list(filter(lambda x: isinstance(x, ColorTile) and self.color == x.color and len(x.existing_structures) != len(x.possible_structures), game.active_player.property_holdings))]
             if not struct_tuples:
                 return []
@@ -278,11 +308,11 @@ class ColorTile(OwnableTile):
         else:
             return []
 
-    def determine_if_buildable(self, game):
+    def is_color_group_filled(self, game):
         #Number of each colored tile
         color_group_dict = {'brown': 2, 'cyan': 3, 'pink': 3, 'orange': 3, 'red': 3, 'yellow': 3, 'green': 3, 'blue': 2}
         counter = 0
-        for tile in game.active_player.property_holdings:
+        for tile in self.find_owner(game=game).property_holdings:
             if isinstance(tile, ColorTile) and tile.color == self.color:
                 counter += 1
         return color_group_dict[self.color] == counter

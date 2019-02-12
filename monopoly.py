@@ -7,10 +7,11 @@ import board
 from itertools import cycle, islice, dropwhile
 from tiles import OwnableTile
 from cards import HoldableCard
+
 """
 TODO (To bring Monopoly fully inline with the rules as defined by https://www.hasbro.com/common/instruct/monins.pdf)
     -Reimplement the interface to support Option categories [On hold]
-        -After completing this, remove the option_name attribute from all Option objects [In Progress]
+        -After completing this, remove the option_name attribute from all Option objects
     -Add support for limited structures, the rules state there should be a set number of houses and hotels. [In progress]
         -Doing this involves making Structures into OwnableItems, and implemting the complete_transaction() method for a Structure
             -See docstring over in tiles.py in the Structure class for more details
@@ -20,10 +21,15 @@ TODO (To bring Monopoly fully inline with the rules as defined by https://www.ha
         -Some executive methods called in an auction (sell_to_bank, remove_structure, and mortgage_owned_property) only work on the Active Player:
             -These should work on the owner of the item.
     -Add feature to charge double rent if a Player owns all tiles in a particular color group. [On hold]
+    -Make a decision about whether or not to call OwnableTile.assess_rent() if a property is purchased while another Player is parked on it.
+        -The rules don't cover this case.
+            -My code does not call assess_rent() in the event of a sale if a Player other than the buyer is parkd on th tile.
+            -To implement this, I would need to refactor assess_rent() to find the Player parked on its parent tile
+                -This is farily trivial, but may be more complex than I'm thinking it's going to be.
     -Add support for non active Players to perform the following actions: [On hold, potential major refactor]
         -Selling OwnableItems to other Players and the Bank.
         -Removing Structures from their properties
-        -Requesting to buy OwnableItems from other Players        
+        -Requesting to buy OwnableItems from other Players         
 """
 
 class Monopoly:
