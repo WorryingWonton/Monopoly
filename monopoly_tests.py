@@ -2,7 +2,10 @@ import unittest
 import monopoly
 import tiles
 import cards
+import auction
 import monopoly_cl_interface
+
+from unittest.mock import patch
 
 class HelperFunctions:
 
@@ -24,7 +27,29 @@ class HelperFunctions:
             return [tile.position for tile in ownable_tiles if tile.property.name == name][0]
 
 
-class TestPlayerRemovalCases(unittest.TestCase):
+class TestMonopolyInitialization(unittest.TestCase):
+
+    def test_game_initialization(self):
+        game_instance = monopoly.Monopoly()
+        self.assertEqual(40, len(game_instance.board))
+        self.assertEqual(0, len(game_instance.players))
+        print(game_instance.chance_deck)
+        self.assertEqual(16, len(game_instance.chance_deck.cards))
+        self.assertEqual(16, len(game_instance.community_deck.cards))
+        self.assertEqual(0, game_instance.turns)
+
+    def test_default_interface(self):
+        game_instance = monopoly.Monopoly()
+        self.assertEqual(True, isinstance(game_instance.interface, monopoly_cl_interface.CLInterface))
+
+    def test_output_of_rungame(self):
+        game_instance = monopoly.Monopoly()
+        game_instance.add_player('David')
+        output = game_instance.run_game()
+        self.assertEqual('David', output.name)
+
+
+class TestActivePlayerCycling(unittest.TestCase):
 
     """
     These tests cover a variety of cases for removing Players from the game.
@@ -143,23 +168,31 @@ class TestPlayerRemovalCases(unittest.TestCase):
         my_game.set_active_player()
         self.assertEqual('David', my_game.active_player.name)
 
+class TestAuction(unittest.TestCase):
 
-class TestMonopolyInitialization(unittest.TestCase):
-
-    def test_game_initialization(self):
+    @patch('monopoly_cl_interface.CLInterface.get_bid', return_value=10)
+    def test_get_bid_case_1(self, input):
         game_instance = monopoly.Monopoly()
-        self.assertEqual(40, len(game_instance.board))
-        self.assertEqual(0, len(game_instance.players))
-        print(game_instance.chance_deck)
-        self.assertEqual(16, len(game_instance.chance_deck.cards))
-        self.assertEqual(16, len(game_instance.community_deck.cards))
-        self.assertEqual(0, game_instance.turns)
+        game_instance.add_player('David')
+        game_instance.generate_in_game_players()
+        item = cards.HoldableCard(name='Go to BEENUS', action=None, parent_deck='Beenus')
+        auc_instance = auction.Auction(game=game_instance, seller=game_instance.players[0], item=item)
+        auc_instance.current_bidder = game_instance.players[0]
+        auc_instance.highest_bid = 5
+        self.assertEqual(10, auc_instance.get_bid())
 
-    def test_default_interface(self):
-        game_instance = monopoly.Monopoly()
-        self.assertEqual(True, isinstance(game_instance.interface, monopoly_cl_interface.CLInterface))
+    def test_case_2(self, input):
+        pass
 
 class TestColorTile(unittest.TestCase):
+    """
+    These tests validate the various components that enable my ColorTile code to behave in a way consistent with the rules of Monopoly.
+    These tests also look in detail at the methods associated with OwnableTile, and its parent class OwnableItem.
+        -OwnableTile and OwnableItem are both abstract classes, and while they possess many concrete methods, there are no direct examples of either object in the game.
+        -TestColorTile will be used to both define the spec for OwnableItem and OwnableTile, and verify their adherence to that spec.
+        -Structure will have its own dedicated test suite to define its behavior in greater detail.
+            -The only tests involving Structure objects in TestColorTile will be centered on validating the build even rule.
+    """
 
     def test_is_color_group_filled(self):
         """
@@ -218,6 +251,7 @@ class TestColorTile(unittest.TestCase):
         game_instance.players[0].position = 39
         self.assertEqual(1325, game_instance.players[0].liquid_holdings)
         self.assertEqual(1675, game_instance.players[1].liquid_holdings)
+
 
 class TestIncomeTaxTile(unittest.TestCase):
     pass

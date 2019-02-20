@@ -26,7 +26,6 @@ class Auction:
             if self.current_bidder == self.highest_bidder:
                 continue
             else:
-                # bid = self.game.interface.get_bid(bidder=self.current_bidder, item=self.item, highest_bid=self.highest_bid, seller=self.seller)
                 bid = self.get_bid()
                 if self.highest_bid is None or bid > self.highest_bid:
                     self.highest_bid = bid
@@ -39,10 +38,9 @@ class Auction:
 
     def get_bid(self):
         bid = self.game.interface.get_bid(bidder=self.current_bidder, item=self.item, highest_bit=self.highest_bid, seller=self.seller)
-        if bid > self.current_bidder.liquid_holdings and bid < self.current_bidder.find_gross_worth():
+        if bid > self.highest_bid and bid > self.current_bidder.liquid_holdings and bid < self.current_bidder.find_gross_worth():
             self.case_2(bid=bid)
-        else:
-            return bid
+        return bid
 
     def case_2(self, bid):
         """
